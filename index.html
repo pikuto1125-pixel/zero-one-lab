@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zero-One Venture Lab — 公開・投影・振込・返信の直前に使う業務検品ツール集</title>
+  <style>
+    :root {
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-ink: #0F172A;
+      --text-primary: #0F172A;
+      --text-secondary: #334155;
+      --border-line: #CBD5E1;
+      --brand-accent: #1E3A8A;
+      --brand-accent-hover: #172554;
+      --status-pass-fg: #065F46;
+      --status-pass-bg: #ECFDF5;
+      --status-pass-bd: #6EE7B7;
+      --badge-amber-fg: #92400E;
+      --badge-amber-bg: #FFFBEB;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--brand-accent);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      background-color: var(--bg-ink);
+      color: #F8FAFC;
+      padding: 14px 20px;
+      border-bottom: 3px solid #D97706;
+    }
+
+    .topbar-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #FFFFFF;
+    }
+
+    .topbar-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .topbar-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background-color: #1E293B;
+      color: #F8FAFC;
+      border: 1px solid #64748B;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 64px 20px;
+    }
+
+    .hero {
+      background-color: var(--bg-surface);
+      border: 2px solid var(--brand-accent);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .hero h1 {
+      font-size: 26px;
+      line-height: 1.35;
+      font-weight: 800;
+      margin: 0 0 12px 0;
+      color: var(--bg-ink);
+    }
+
+    .hero-lead {
+      font-size: 15px;
+      color: var(--text-primary);
+      font-weight: 600;
+      margin: 0 0 14px 0;
+    }
+
+    .hero-io-list {
+      margin: 0 0 14px 0;
+      padding-left: 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .hero-disclosure {
+      margin: 0;
+      padding: 10px 14px;
+      background-color: #F1F5F9;
+      border-left: 4px solid var(--brand-accent);
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .kpi-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-line);
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+
+    .kpi-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin: 0 0 4px 0;
+    }
+
+    .kpi-number {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--bg-ink);
+      margin: 0;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: 4px 0 0 0;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 18px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #E2E8F0;
+      color: var(--bg-ink);
+    }
+
+    .venture-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .venture-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-line);
+      border-radius: 8px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .venture-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .venture-code {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--badge-amber-fg);
+      background-color: var(--badge-amber-bg);
+      border: 1px solid #FCD34D;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .venture-status {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--status-pass-fg);
+      background-color: var(--status-pass-bg);
+      border: 1px solid var(--status-pass-bd);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .venture-card h3 {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0 0 8px 0;
+      color: var(--bg-ink);
+    }
+
+    .venture-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0 0 12px 0;
+    }
+
+    .venture-moat {
+      font-size: 13px;
+      background-color: #F1F5F9;
+      color: var(--text-primary);
+      padding: 10px 12px;
+      border-radius: 6px;
+      border-left: 3px solid var(--brand-accent);
+      margin: 0;
+    }
+
+    .venture-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid #E2E8F0;
+    }
+
+    .venture-price {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .btn-launch {
+      display: inline-block;
+      padding: 9px 16px;
+      background-color: var(--brand-accent);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 6px;
+    }
+
+    .btn-launch:hover {
+      background-color: var(--brand-accent-hover);
+    }
+
+    .arch-table-wrap {
+      overflow-x: auto;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-line);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 32px;
+    }
+
+    .arch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .arch-table th {
+      background-color: #F1F5F9;
+      color: var(--bg-ink);
+      padding: 10px 12px;
+      font-weight: 700;
+      border-bottom: 2px solid var(--border-line);
+    }
+
+    .arch-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #E2E8F0;
+      color: var(--text-primary);
+      overflow-wrap: anywhere;
+    }
+
+    .boundary-box {
+      background-color: #FFFBEB;
+      border: 1px solid #D97706;
+      border-radius: 8px;
+      padding: 20px 22px;
+      margin-bottom: 36px;
+      color: #78350F;
+      font-size: 14px;
+    }
+
+    .boundary-box h2 {
+      font-size: 18px;
+      margin: 0 0 10px 0;
+      color: #78350F;
+    }
+
+    .boundary-box p {
+      margin: 0 0 8px 0;
+    }
+
+    .cta-footer {
+      background-color: var(--bg-ink);
+      color: #FFFFFF;
+      border-radius: 8px;
+      padding: 32px 24px;
+      border-top: 3px solid #D97706;
+    }
+
+    .cta-footer h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin: 0 0 10px 0;
+    }
+
+    .cta-footer p {
+      font-size: 14px;
+      color: #E2E8F0;
+      margin: 0 0 20px 0;
+      max-width: 720px;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn-cta {
+      display: inline-block;
+      padding: 12px 22px;
+      background-color: #B45309;
+      color: #FFFFFF;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 6px;
+    }
+
+    .btn-cta:hover {
+      background-color: #92400E;
+    }
+
+    
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+
+    @media print {
+      body {
+        background: #FFFFFF;
+        color: #000000;
+      }
+      .topbar, .cta-footer {
+        display: none;
+      }
+    }
+  
+      .pub-samples-gallery { max-width: 1280px; margin: 24px auto; padding: 20px; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; }
+      .pub-samples-title { margin: 0 0 8px 0; font-size: 18px; color: #0F172A; }
+      .pub-samples-lead { margin: 0 0 14px 0; font-size: 14px; color: #334155; }
+      .pub-reels-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px; margin-bottom: 16px; }
+      .pub-reel-card { border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; background: #F8FAFC; }
+      .pub-reel-label { margin: 0 0 6px 0; font-weight: 700; font-size: 14px; color: #0F172A; }
+      .pub-reel-video { width: 100%; max-width: 220px; aspect-ratio: 9 / 16; background: #0F172A; border-radius: 6px; display: block; margin: 0 auto; }
+      .pub-sample-links { display: flex; flex-wrap: wrap; gap: 8px; }
+      .pub-sample-btn { padding: 7px 12px; border: 1px solid #475569; color: #0F172A; font-weight: 700; font-size: 13px; text-decoration: none; border-radius: 4px; background: #FFFFFF; }
+      .pub-sample-btn--primary { border-color: #0F766E; color: #0F766E; }
+    
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-mark">Zero-One Venture Lab</div>
+      <div class="topbar-pills">
+        <span class="topbar-pill">検品ツール 6 種</span>
+        <span class="topbar-pill">全6種の出力見本を収録（保存版プレビュー）</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>公開・投影・振込・一括配信・返信の直前に、うっかりミスと手戻りを防ぐ業務検品ツール集</h1>
+      <p class="hero-lead">
+        商品画像・提案スライド・請求書コピー文字列・LINE/メール通知リスト・追加要望メッセージを入れると、見え方再現・桁ズレや適格要件の検算・二重送信ロック・角の立たない返信案をその場で返します。
+      </p>
+      <ul class="hero-io-list">
+        <li><strong>入れるもの:</strong> 商品・サムネイル画像、提案スライド画像、請求書や領収書からコピーした文字列（TSV/CSVも可）、LINE・メール配信予定の予約/注文リスト、お客様からの追加要望メッセージ</li>
+        <li><strong>出てくるもの:</strong> スマホ売り場・会議室プロジェクターでの見え方の再現画像、請求書の桁ズレ・インボイス要件・税額の検算結果、会計取込用の仕訳CSV、二重送信・差し込み漏れを除いた安全配信CSV、2択の返信下書き</li>
+      </ul>
+      <p class="hero-disclosure">
+        このファイルはオフライン確認用の保存版カタログです。各ページで実際の出力見本をご確認いただけます（InvoiceGuard は保存版のままブラウザ上で検算試運転も可能。他5ツールのライブ試運転はサーバー起動時にご利用いただけます）。
+      </p>
+    </section>
+
+    <section id="ventures-list">
+      <h2 class="section-title">業務検品ツール一覧（各ページの出力見本・仕様を見る）</h2>
+      <div class="venture-grid">
+        
+          <article class="venture-card">
+            <div>
+              <div class="venture-meta">
+                <span class="venture-code">ツール1 ・ ThumbStop Arena</span>
+                <span class="venture-status">出力見本を確認できます</span>
+              </div>
+              <h3>商品画像・サムネの「スマホ売り場での見え方」検品</h3>
+              <p class="venture-desc">商品・サムネ画像（PNG/JPEG）を入れると、スマホ2列売り場に並べた再現画像・見やすさ点数・最優先の直し1点を返します。</p>
+              <p class="venture-moat">スマホ縮小時の文字潰れ、再生時間やPRバッジとの重なり、他の商品に埋もれていないかを再現して点数化します。</p>
+            </div>
+            <div class="venture-footer">
+              <span class="venture-price">出力見本を収録（Web公開環境で登録不要の無料試運転に対応）／導入相談は下部フォーム</span>
+              <a href="./ventures/v001_thumbstop_arena/dist/public_landing_preview.html" class="btn-launch">ThumbStop Arena の見本を見る</a>
+            </div>
+          </article>
+        
+          <article class="venture-card">
+            <div>
+              <div class="venture-meta">
+                <span class="venture-code">ツール2 ・ ReplyGuard Solo</span>
+                <span class="venture-status">出力見本を確認できます</span>
+              </div>
+              <h3>追加要望メッセージの「範囲外リスク」判定＆返信案</h3>
+              <p class="venture-desc">お客様の追加要望メッセージと当初の合意範囲を入れると、範囲外の可能性・追加作業時間の目安・2択の返信下書きを返します。</p>
+              <p class="venture-moat">角の立たない返信案を作るだけで、お客様への自動送信は一切行いません。送る前に必ずご自身で確認できます。</p>
+            </div>
+            <div class="venture-footer">
+              <span class="venture-price">出力見本を収録（Web公開環境で登録不要の無料試運転に対応）／導入相談は下部フォーム</span>
+              <a href="./ventures/v002_replyguard_solo/dist/public_landing_preview.html" class="btn-launch">ReplyGuard Solo の見本を見る</a>
+            </div>
+          </article>
+        
+          <article class="venture-card">
+            <div>
+              <div class="venture-meta">
+                <span class="venture-code">ツール3 ・ SlideGate PreFlight</span>
+                <span class="venture-status">出力見本を確認できます</span>
+              </div>
+              <h3>提案・登壇スライドの「会議室プロジェクターでの見え方」検品</h3>
+              <p class="venture-desc">スライド画像（PNG/JPEG）を入れると、明るい会議室で白飛びし後方席でぼやけた状態を再現した画像と、読みやすさ点数・直し方を返します。</p>
+              <p class="venture-moat">薄いグレー文字や細い文字が投影で消えるミスを、本番前に自席で確認できます。</p>
+            </div>
+            <div class="venture-footer">
+              <span class="venture-price">出力見本を収録（Web公開環境で登録不要の無料試運転に対応）／導入相談は下部フォーム</span>
+              <a href="./ventures/v003_slidegate_preflight/dist/public_landing_preview.html" class="btn-launch">SlideGate PreFlight の見本を見る</a>
+            </div>
+          </article>
+        
+          <article class="venture-card">
+            <div>
+              <div class="venture-meta">
+                <span class="venture-code">ツール4 ・ InvoiceGuard PreFlight</span>
+                <span class="venture-status">見本＋この画面で検算可</span>
+              </div>
+              <h3>買掛請求書の「単価10倍桁ズレ・過払い」防止ゲート</h3>
+              <p class="venture-desc">請求書PDF等からコピーした明細テキストやTSVを貼ると、過去単価との10倍ズレ・税率別の端数ミス・二重払いを振込前に止めます。</p>
+              <p class="venture-moat">「支払う側」の請求書が対象です。問題のない請求書だけを会計取込用の仕訳CSVにします。判定できない時は合格にせず停止します。</p>
+            </div>
+            <div class="venture-footer">
+              <span class="venture-price">出力見本を収録＋この保存版画面で検算試運転可／導入相談は下部フォーム</span>
+              <a href="./ventures/v004_invoice_guard/showcase_preview.html" class="btn-launch">InvoiceGuard PreFlight の見本を見る</a>
+            </div>
+          </article>
+        
+          <article class="venture-card">
+            <div>
+              <div class="venture-meta">
+                <span class="venture-code">ツール5 ・ SnapLedger PreFlight</span>
+                <span class="venture-status">出力見本を確認できます</span>
+              </div>
+              <h3>経費領収書・請求書の「インボイス6要件＆仕訳CSV」検疫デスク</h3>
+              <p class="venture-desc">コピーした文字から適格6要件・10%/8%税額を1円単位で検算し、合格分だけ freee / マネーフォワード用CSVに変換します。</p>
+              <p class="venture-moat">添付したレシート画像はピンボケ・暗潰れの画質チェック専用で、文字の自動読み取り（OCR）は行いません。</p>
+            </div>
+            <div class="venture-footer">
+              <span class="venture-price">出力見本を収録（Web公開環境で登録不要の無料試運転に対応）／導入相談は下部フォーム</span>
+              <a href="./ventures/v004_snapledger_preflight/dist/public_landing_preview.html" class="btn-launch">SnapLedger PreFlight の見本を見る</a>
+            </div>
+          </article>
+        
+          <article class="venture-card">
+            <div>
+              <div class="venture-meta">
+                <span class="venture-code">ツール6 ・ SyncGuard PreFlight</span>
+                <span class="venture-status">出力見本を確認できます</span>
+              </div>
+              <h3>スプレッドシート×LINE・メール通知の「二重送信＆差し込み漏れ」防止ゲート</h3>
+              <p class="venture-desc">予約・注文リスト（CSV/TSV）を貼ると、同一お客様への二重送信と%お客様名%等の差し込み漏れを止め、一時エラー未達分だけの安全再送CSVを出力します。</p>
+              <p class="venture-moat">完全ローカル決定論で動き、この画面からお客様へLINEやメールが勝手に送信されることは一切ありません。</p>
+            </div>
+            <div class="venture-footer">
+              <span class="venture-price">出力見本を収録（Web公開環境で登録不要の無料試運転に対応）／導入相談は下部フォーム</span>
+              <a href="./ventures/v005_idempotent_sync_guard/dist/public_landing_preview.html" class="btn-launch">SyncGuard PreFlight の見本を見る</a>
+            </div>
+          </article>
+        
+          <article class="venture-card">
+            <div>
+              <div class="venture-meta">
+                <span class="venture-code">ツール7 ・ SiteProof Studio</span>
+                <span class="venture-status">出力見本を確認できます</span>
+              </div>
+              <h3>現場写真4枚から「A4施工完了報告書＆9:16施工事例ショート動画」を一括自動生成</h3>
+              <p class="venture-desc">施工前・下地処理・施工中・完了の写真4枚と工事名を入れると、Before/After比較画像・A4印刷対応報告書・9:16 H.264/AAC MP4ショート動画をワンクリックで生成します。</p>
+              <p class="venture-moat">お使いの環境内のSharp＋ffmpegのみで完結処理し、未完成現場やお客様外観写真が外部クラウド・外部AIへ送信されることはありません。</p>
+            </div>
+            <div class="venture-footer">
+              <span class="venture-price">出力見本を収録（Web公開環境で登録不要の無料試運転に対応）／導入相談は下部フォーム</span>
+              <a href="./ventures/v006_siteproof_studio/dist/public_landing_preview.html" class="btn-launch">SiteProof Studio の見本を見る</a>
+            </div>
+          </article>
+        
+      </div>
+    </section>
+
+    <section id="real-examples">
+      <h2 class="section-title">よくある「うっかりミス」を例示データで止めた出力例</h2>
+      <div class="arch-table-wrap">
+        <table class="arch-table">
+          <thead>
+            <tr>
+              <th>よくある現場の事故</th>
+              <th>入力した例示データ</th>
+              <th>各ツールの例示データ出力と防げる手戻り</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>請求書の単価を1桁多く打ち間違い、そのまま振り込みそうになる</td>
+              <td>ノートPC 3台の単価 128,000円が「1,280,000円」になった例示請求書テキスト</td>
+              <td>過去単価の10倍ズレ（税抜差額 3,456,000円の過払いリスク）として自動停止し、仕訳CSV出力をロック（InvoiceGuard の内蔵例示2件で出力確認）</td>
+            </tr>
+            <tr>
+              <td>軽減8%品目に10%の消費税が書かれた領収書をそのまま記帳してしまう</td>
+              <td>お茶代 1,800円（軽減8%・正しい税額144円）に消費税 180円と誤記載＋法人登録番号1桁打ち間違いの例示領収書</td>
+              <td>税額36円超過と法人登録番号の検査数字不一致を同時に検知して差し戻し、合格証憑だけを freee / MF 用CSVに変換（SnapLedger の内蔵例示3件で出力確認）</td>
+            </tr>
+            <tr>
+              <td>PCでは読める商品画像の価格が、スマホ売り場ではバッジに隠れて読めない</td>
+              <td>右下に細字のキャッチコピーを置いた例示商品画像Aと、左上に配置し直した例示商品画像B（PNG）</td>
+              <td>スマホ2列（幅168px）縮小＋右下「PR・送料無料」バッジ重なり再現画像を生成し、改善前の低スコア画像と改善後の基準通過画像を一目で比較（ThumbStop の内蔵例示2枚で出力確認）</td>
+            </tr>
+            <tr>
+              <td>制作途中に「ついでに決済機能も納期そのままで」と頼まれ無償で抱え込む</td>
+              <td>LP 1ページ制作契約に対する「ついでにStripe決済も追加してもらえますか？納期は変えずにお願いします。」という例示連絡文</td>
+              <td>契約範囲外（想定追加9時間）と判定し、角を立てない2通りの返信下書き（当初範囲を優先納品 ／ 追加見積45,000円税別［単価5,000円/時試算］を案内）を即座に作成（ReplyGuard の内蔵例示1件の実エンジン出力）</td>
+            </tr>
+            <tr>
+              <td>スプレッドシート連携の再実行で、同じお客様に予約リマインドLINEを2回送ってしまう</td>
+              <td>重複取込1件・差し込み漏れ（%お客様名%残り）1件・宛先形式ミス1件・通信混雑429エラー1件を含む例示予約リスト6件</td>
+              <td>重複と差し込み不備の計3件を送信前にブロックし、正常通過2件と未達再送対象1件だけを「安全再送用CSV」へ分離出力（SyncGuard の内蔵例示6件で出力確認）</td>
+            </tr>
+            <tr>
+              <td>外壁塗装・外構・中古車の現場写真を撮っても、A4提出用の施工完了報告書とInstagram/SNS用縦ショート動画を作る手間が重すぎる</td>
+              <td>施工前・下地処理・施工中・完了の例示現場写真4枚（外壁塗装・外構・中古車プリセット）と工事名</td>
+              <td>写真解像度・明るさ検査＋Before/After比較PNG（1200×640）＋A4印刷対応完了報告書HTML＋9:16縦型H.264/AAC MP4（540×960・8.55秒）を約0.7秒で一括出力</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="boundary-box">
+      <h2>未対応・人間による最終確認が必要な範囲 ＆ 停止したときの挙動</h2>
+      <p><strong>最終確認が必要な範囲:</strong> 各ツールは見え方・桁ズレ・インボイス要件・税額の整合・範囲外表現を機械で検査しますが、薬機法・景品表示法上の適否、国税庁公表サイトでの登録失効の照会、免税事業者の経過措置や勘定科目の最終判断、お客様への正式な見積確約と実際の送信は対象外です。担当者または税理士による最終確認が必要です。</p>
+      <p><strong>入力不備・判定不能のとき:</strong> 空欄・壊れたファイル・サイズ超過は、理由を表示して処理を止めます。AI判定を使うモードで通信できないときは、画像・スライド・請求書ツールは黙って合格にせず「判定不能」と表示して停止し、返信判定（ReplyGuard）は外部通信できなかった旨を明示した上でローカル判定結果を表示します。</p>
+    </section>
+
+    <section id="spec-evidence">
+      <h2 class="section-title">検証条件・技術仕様</h2>
+      <div class="arch-table-wrap">
+        <table class="arch-table">
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>内容</th>
+              <th>測定日・環境・結果</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>全自動テスト件数</td>
+              <td>全スイート自動テスト合計 31 件（統合画面・梱包 2 件 ／ 返信判定単体 7 件＋通し 1 件 ／ 請求書検品 10 件 ／ LINE・メール二重送信防止 2 件 ／ 現場写真・縦動画 2 件 ／ 他各ツール通しテスト 7 件）</td>
+              <td>測定日 2026-11-14・手元PC（Node.js v24.14.0）での実行結果は 31 件すべて通過</td>
+            </tr>
+            <tr>
+              <td>実測応答時間</td>
+              <td>本ページ（ツール一覧）の生成に要した時間 2 ms</td>
+              <td>測定日 2026-11-14・手元PCのローカル実行・n=1（回線・端末により変わります）</td>
+            </tr>
+            <tr>
+              <td>使用技術</td>
+              <td>画面配信 Hono ／ 画像合成 Sharp ／ 動画変換・検証 ffmpeg・ffprobe ／ 履歴・送信済み台帳保存 SQLite（Node.js 同梱機能）</td>
+              <td>測定日 2026-11-14・上記テストで動作確認</td>
+            </tr>
+            <tr>
+              <td>画面表示の確認</td>
+              <td>画面幅 1440 / 960 / 390 / 320px で横はみ出しなし・文字と背景の明暗差 4.5:1 以上・A4印刷可（21項目の機械検査）</td>
+              <td>測定日 2026-11-14・Playwright で全ページ実測</td>
+            </tr>
+            <tr>
+              <td>納品物の機密確認</td>
+              <td>鍵・秘密値の検出スキャンを通ったファイルのみを梱包し、ローカルDBは除外</td>
+              <td>測定日 2026-11-14・機密違反 0 件（梱包台帳に記録）</td>
+            </tr>
+            <tr>
+              <td>通信先の開示</td>
+              <td>画像の見え方再現合成・インボイス検算・MOD9検査・重複照合・LINE/メール二重送信検疫（SyncGuard）・施工写真A4完了報告書＆9:16縦動画生成（SiteProof）はお使いの環境内で完結し、外部へ送信しません。ただし、ThumbStop Arena の画像採点・A/B勝率判定、および対象ツールでAI併用モードを有効にした時のみ Google Gemini Decisions API Paid Tier（学習利用なし）へ接続します。</td>
+              <td>外部通信先はこの1か所のみ（お客様への自動メール・LINE・チャット送信機能は一切なし）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    
+    
+    <section id="samples-gallery" class="pub-samples-gallery">
+      <h2 class="pub-samples-title">業種別の実物出力見本レポート ＆ SiteProof 9:16 施工事例動画ギャラリー</h2>
+      <p class="pub-samples-lead">ブラウザ上ですぐに結果や再生映像を確認できる事前出力見本です（1080×1920・日本語音声・BGM付）。</p>
+      <div class="pub-reels-grid">
+        <div class="pub-reel-card">
+          <p class="pub-reel-label">外壁・屋根塗装 事例 (1080×1920・18秒)</p>
+          <video class="pub-reel-video" controls playsinline preload="metadata" src="./media/siteproof_v2_exterior_paint_1080.mp4"></video>
+        </div>
+        <div class="pub-reel-card">
+          <p class="pub-reel-label">外構・エクステリア 事例 (1080×1920・18秒)</p>
+          <video class="pub-reel-video" controls playsinline preload="metadata" src="./media/siteproof_v2_exterior_garden_1080.mp4"></video>
+        </div>
+        <div class="pub-reel-card">
+          <p class="pub-reel-label">中古車・板金仕上げ 事例 (1080×1920・18秒)</p>
+          <video class="pub-reel-video" controls playsinline preload="metadata" src="./media/siteproof_v2_used_car_detail_1080.mp4"></video>
+        </div>
+      </div>
+      <div class="pub-sample-links">
+        <a href="./samples/sample_v006_siteproof.html" class="pub-sample-btn pub-sample-btn--primary">SiteProof 出力見本HTML</a>
+        <a href="./samples/sample_v005_syncguard.html" class="pub-sample-btn">SyncGuard 出力見本HTML</a>
+        <a href="./samples/sample_v004_invoiceguard.html" class="pub-sample-btn">InvoiceGuard 出力見本HTML</a>
+        <a href="./samples/sample_v004_snapledger.html" class="pub-sample-btn">SnapLedger 出力見本HTML</a>
+        <a href="./samples/sample_v003_slidegate.html" class="pub-sample-btn">SlideGate 出力見本HTML</a>
+        <a href="./samples/sample_v002_replyguard.html" class="pub-sample-btn">ReplyGuard 出力見本HTML</a>
+        <a href="./samples/sample_v001_thumbstop.html" class="pub-sample-btn">ThumbStop 出力見本HTML</a>
+      </div>
+    </section>
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">個別検品パック・専用カスタマイズのご相談フォーム</h2>
+      <p class="inquiry-lead">「手元のデータ1件で無料見本を作ってほしい」「自社の帳票・制作フローに合わせて導入したい」という場合は、下のフォームから送信（または依頼文をコピーしてメッセージ欄へ貼り付け）してください。決済情報の入力は不要です。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="実データ1件での無料検品サンプル作成希望">実データ1件での無料検品サンプル作成希望</option><option value="単発の検品パック依頼（画像・スライド・請求書など）">単発の検品パック依頼（画像・スライド・請求書など）</option><option value="社内導入・自社仕様へのカスタマイズ見積り相談">社内導入・自社仕様へのカスタマイズ見積り相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: お手元のデータ3〜5件について、公開・振込前の無料サンプル検品を希望します。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#ventures-list" class="inquiry-alt-link">上のツール一覧へ戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "Zero-One Venture Lab" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+  </main>
+</body>
+</html>

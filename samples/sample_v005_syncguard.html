@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SyncGuard PreFlight — スプレッドシート×LINE・メール通知の「二重送信ゼロ＆失敗隔離」検疫見本</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+      --ink: #0F172A;
+      --sub: #334155;
+      --line: #CBD5E1;
+      --accent: #1E3A8A;
+      --ok-fg: #065F46;
+      --ok-bg: #ECFDF5;
+      --ng-fg: #9F1239;
+      --ng-bg: #FFF1F2;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--ink);
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+      font-size: 16px; line-height: 1.65; overflow-x: hidden;
+    }
+    a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 28px 20px 56px 20px; }
+    .head {
+      background: var(--card); border: 2px solid var(--accent); border-radius: 8px;
+      padding: 20px 22px; margin-bottom: 24px;
+    }
+    .head h1 { font-size: 24px; margin: 0 0 10px 0; color: var(--ink); line-height: 1.35; }
+    .lead { font-size: 15px; margin: 0 0 12px 0; color: var(--ink); font-weight: 600; }
+    .io-list { margin: 0 0 10px 0; padding-left: 20px; font-size: 14px; color: var(--sub); }
+    .disclosure {
+      margin: 0; padding: 8px 12px; background: #F1F5F9; border-left: 4px solid var(--accent);
+      font-size: 13px; color: var(--ink);
+    }
+    h2 { font-size: 18px; margin: 28px 0 12px 0; color: var(--ink); border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 20px; margin-bottom: 24px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+    .panel h3 { font-size: 16px; margin: 0 0 10px 0; color: var(--ink); }
+    .badge-ok { display: inline-block; padding: 3px 10px; border-radius: 4px; background: var(--ok-bg); color: var(--ok-fg); font-size: 13px; font-weight: 700; }
+    .badge-ng { display: inline-block; padding: 3px 10px; border-radius: 4px; background: var(--ng-bg); color: var(--ng-fg); font-size: 13px; font-weight: 700; }
+    .sample-img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 10px 0; }
+    .caption { font-size: 13px; color: var(--sub); margin: 6px 0 0 0; }
+    .pre-box {
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      background: #F1F5F9; border: 1px solid var(--line); border-radius: 6px;
+      padding: 12px; font-size: 13px; color: var(--ink); margin-top: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; background: var(--card); margin-bottom: 20px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; font-size: 13px; text-align: left; overflow-wrap: anywhere; }
+    th { background: #F1F5F9; color: var(--ink); font-weight: 700; }
+    .boundary {
+      background: #FFFBEB; border: 1px solid #D97706; border-radius: 8px;
+      padding: 16px 20px; margin-bottom: 24px; font-size: 14px; color: #78350F;
+    }
+    .boundary h2 { font-size: 16px; margin: 0 0 8px 0; color: #78350F; border-bottom: none; padding-bottom: 0; }
+    .boundary p { margin: 0 0 8px 0; }
+    
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+    @media print { .inquiry-section { display: none; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="head" id="top-spec">
+      <h1>SyncGuard PreFlight — スプレッドシート×LINE・メール通知の「二重送信ゼロ＆失敗隔離」検疫見本</h1>
+      <p class="lead">予約表や注文シート（CSV/TSV）からLINE・メールを一括配信する直前に、同じお客様への二重送信と「%お客様名%」等の差し込み漏れを止め、「今送れるリスト（CSV）」と「一時エラー未達分だけの安全再送CSV」の2種類へ自動分離します。現在お使いのスプレッドシート列構成を変えずに組み込め、まずは架空のダミー予約データ5行をお送りいただくだけで無料検品見本を作成します。</p>
+      <ul class="io-list">
+        <li><strong>入力（入れるもの）:</strong> スプレッドシートからコピーした通知予定の行（CSV/TSV）またはWebhook配信データ（予約・注文番号、お客様名、媒体、LINEユーザーIDまたはメールアドレス、予定日時、メッセージ本文）</li>
+        <li><strong>出力（出てくるもの）:</strong> 行ごとの二重送信・差し込み漏れ・宛先形式エラーの停止判定、A. 新規送信可能CSV（検疫通過行のみ）および B. 未達再送専用CSV（一時通信エラー行のみ）の分離出力（このまま配信ツールへ取り込めます）</li>
+      </ul>
+      <p class="disclosure">このファイルは提案添付・事前確認用のスタンドアロン出力見本HTMLです（例示データを実際の検品プログラムに通した出力であり、顧客実績ではありません）。実データ1件での無料サンプル検品をご希望の場合は、ページ下部のご相談フォームから依頼文を作成できます。</p>
+    </header>
+
+    <section>
+      <h2>例示データを検品ツールに通した出力見本</h2>
+      
+      <div class="grid-2">
+        <div class="panel">
+          <h3>【停止・除外された行】お客様へ誤送信される前に止めた3件</h3>
+          <span class="badge-ng">二重送信ブロック 1件 ＋ 差し込み・宛先不備 2件を停止</span>
+          <p class="caption">※架空の美容室・クリニック前日リマインド例示データ（全6件）の実出力（測定日: 2026-11-14 / n=6件）。LINE通数課金の無駄打ち3通分と謝罪対応（1回あたり約30〜60分）を未然に防ぎます。</p>
+          <div class="pre-box">・2行目（RSV-20261115-01 / 佐藤 美咲）: 今回の一覧内で重複（二重送信ブロック）（1行目と同一）
+・3行目（RSV-20261115-02 / 鈴木 健太）: 差し込み変数の置換漏れ（お名前タグ等が未変換で残存）［残存トークン: %お客様名% / %予約日時%］
+・4行目（RSV-20261115-03 / 高橋 由美）: LINE宛先IDの形式エラー
+
+上記の3件は、誤配信とクレームを防ぐため送信対象CSVから自動的に除外されます。</div>
+        </div>
+        <div class="panel">
+          <h3>【分離出力された安全キュー】新規送信可能2件 ／ 未達再送専用1件</h3>
+          <span class="badge-ok">A. 新規送信可能 2件 ／ B. 未達再送専用 1件を個別出力</span>
+          <p class="caption">※新規送信対象と通信混雑（429）の再送対象を別々のCSVに分けて出力するため、そのままコピーして配信ツールへ貼るだけで混同や二重配信を防げます。</p>
+          <div class="pre-box">[A. 新規送信可能CSV（検疫通過分のみ）]
+行番号,検疫判定,媒体,宛先ID_アドレス,お客様名,予約_注文番号,用件,予定日時,メッセージ本文,二重送信防止キー_SHA256
+&quot;1&quot;,&quot;送信可能（検疫通過）&quot;,&quot;LINE&quot;,&quot;U8f1a2b3c4d5e6f708192a3b4c5d6e7f8&quot;,&quot;佐藤 美咲&quot;,&quot;RSV-20261115-01&quot;,&quot;前日リマインド&quot;,&quot;2026-11-15T10:00&quot;,&quot;佐藤 美咲様、明日の10:00よりカット＋カラーのご予約を承っております。変更がある場合は本LINEへご返信ください。&quot;,&quot;40fa0ff5026c788b65124e7e59c358682fd596aa2fb7a2e8ff2fa8ab697d2fc2&quot;
+&quot;6&quot;,&quot;送信可能（検疫通過）&quot;,&quot;EMAIL&quot;,&quot;ito.ayaka@salon-guest-sample.jp&quot;,&quot;伊藤 彩花&quot;,&quot;RSV-20261115-05&quot;,&quot;前日リマインド&quot;,&quot;2026-11-15T18:00&quot;,&quot;伊藤 彩花様、明日18:00のご予約確認メールをお送りいたします。お気をつけてお越しください。&quot;,&quot;8a31ccc15522c8f8c413c60e3946d31c2040f8d74b7460356740a969e2477a9f&quot;
+
+[B. 未達再送専用CSV（一時通信エラー分のみ）]
+行番号,検疫判定,媒体,宛先ID_アドレス,お客様名,予約_注文番号,用件,予定日時,メッセージ本文,二重送信防止キー_SHA256
+&quot;5&quot;,&quot;再送対象（前回一時通信エラー）&quot;,&quot;LINE&quot;,&quot;Uabcdef0123456789abcdef0123456789&quot;,&quot;田中 翔太&quot;,&quot;RSV-20261115-04&quot;,&quot;前日リマインド&quot;,&quot;2026-11-15T16:30&quot;,&quot;田中 翔太様、明日の16:30より整体60分コースのご予約を承っております。&quot;,&quot;0b029ab9aa9894d7f199015b630ea467a6763049b0495a97e1e58d1accd4e8c9&quot;</div>
+        </div>
+      </div>
+    
+    </section>
+
+    <section class="boundary">
+      <h2>未対応・手動確認が必要な範囲 ＆ 停止したときの次の手</h2>
+      <p><strong>人間による最終確認が必要な範囲:</strong> 本ツールは宛先ID形式（LINE 33文字ID・メール形式）、同一業務キーの重複、差し込み変数記号の残り、文字数上限を機械検査します。お客様側でのLINEブロック状態、メールアドレスの実在確認、および個人情報保護法・特定電子メール法上の配信同意有無は確認できないため、配信責任者による台帳確認が必要です。</p>
+      <p><strong>入力不備・判定不能のとき:</strong> 空データや1回の上限件数（500行）を超える入力は理由を表示して処理を止めます。重複または差し込み不備が検知された行は安全送信CSVから自動除外されます。</p>
+    </section>
+
+    <section>
+      <h2>検証条件・測定証跡（再現条件とサンプル件数）</h2>
+      <table>
+        <thead>
+          <tr><th>項目・指標</th><th>本見本での実測値</th><th>測定日・環境・条件・件数 (n)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>例示通知リスト6件の一括検疫＋再送CSV生成時間</td><td>2 ms（6件合計）</td><td>測定日: 2026-11-14 / 環境: Node.js v24.14.0 手元PCでのローカル実行 / オフライン決定論ルール実測 (n=6)</td></tr>
+<tr><td>二重送信・差し込み漏れ・宛先不正の事前遮断数</td><td>計 3 件を自動除外</td><td>同一予約番号の重複1件・未置換テンプレ変数残存1件・LINE宛先ID形式不正1件を同時検知 (n=6)</td></tr>
+<tr><td>一時通信エラー（HTTP 429）行の個別分離</td><td>1 件を再送専用CSVへ分離</td><td>正常送信済み行への二重再送を起こさず未達行のみを抽出できることを確認 (n=6)</td></tr>
+        </tbody>
+      </table>
+      <p class="caption">通信先: 手元実行時は二重送信防止の照合・形式検査・差し込み漏れ検知・CSV生成のすべてが手元環境内で完結（外部AI連携なし、お客様への自動LINE・メール送信機能なし、DBへの顧客氏名・本文保存なし）。導入後の継続運用（社内共有サーバーまたはGAS連携）も同一ルールで動作します</p>
+    </section>
+
+    
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">個別検品パック・専用カスタマイズのご相談フォーム</h2>
+      <p class="inquiry-lead">「手元のデータ1件で無料見本を作ってほしい」「自社の帳票・制作フローに合わせて導入したい」という場合は、下のフォームから送信（または依頼文をコピーしてメッセージ欄へ貼り付け）してください。決済情報の入力は不要です。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="実データ1件での無料検品サンプル作成希望">実データ1件での無料検品サンプル作成希望</option><option value="単発の検品パック依頼（画像・スライド等）">単発の検品パック依頼（画像・スライド等）</option><option value="自社仕様へのカスタマイズ・導入見積り相談">自社仕様へのカスタマイズ・導入見積り相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: お手元のデータ3〜5件について、公開・振込前の無料サンプル検品を希望します。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#top-spec" class="inquiry-alt-link">上の見本に戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "SyncGuard PreFlight" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+  </main>
+</body>
+</html>

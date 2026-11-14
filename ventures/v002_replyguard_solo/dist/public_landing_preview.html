@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ReplyGuard Solo — スコープクリープ（無償追加作業の膨張）自動判定 ＆ 角の立たない返信下書き</title>
+  <style>
+    :root {
+      --bg-page: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --bg-dark: #0F172A;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --border-color: #CBD5E1;
+      --accent-indigo: #3730A3;
+      --accent-indigo-hover: #312E81;
+      --color-green: #047857;
+      --bg-green-soft: #ECFDF5;
+      --color-amber: #92400E;
+      --bg-amber-soft: #FFFBEB;
+      --color-rose: #9F1239;
+      --bg-rose-soft: #FFF1F2;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+    a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid var(--accent-indigo);
+      outline-offset: 2px;
+    }
+
+    .header-bar { background-color: var(--bg-dark); color: #FFFFFF; padding: 14px 20px; border-bottom: 3px solid var(--accent-indigo); }
+    .header-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: 0.02em; margin: 0; }
+    .brand-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge-pill { font-size: 12px; padding: 3px 10px; border-radius: 9999px; background: #1E293B; color: #F8FAFC; border: 1px solid #64748B; font-weight: 600; }
+
+    .main-container { max-width: 1120px; margin: 0 auto; padding: 32px 20px 64px 20px; }
+    .hero-section { margin-bottom: 28px; }
+    .hero-eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--accent-indigo); }
+    .hero-h1 { font-size: 28px; line-height: 1.35; font-weight: 800; color: var(--bg-dark); margin: 0 0 12px 0; overflow-wrap: anywhere; }
+    .hero-sub { font-size: 16px; color: var(--text-main); margin: 0 0 16px 0; max-width: 760px; }
+    .io-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0 0 16px; }
+    .io-card { background: var(--bg-card); border: 1.5px solid var(--text-main); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+    .io-card h2 { margin: 0 0 6px; font-size: 16px; font-weight: 800; color: var(--text-main); }
+    .io-card p { margin: 0; font-size: 14px; color: var(--text-main); overflow-wrap: anywhere; }
+    .safe-note { margin: 0 0 16px; padding: 10px 14px; border-left: 4px solid var(--color-green); background: var(--bg-green-soft); color: #064E3B; font-size: 14px; font-weight: 600; max-width: 760px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .btn-sample { padding: 13px 24px; background-color: var(--accent-indigo); color: #FFFFFF; border: none; border-radius: 6px; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+    .btn-sample:hover { background-color: var(--accent-indigo-hover); }
+    .link-sub { font-size: 14px; font-weight: 700; color: var(--accent-indigo); }
+
+    .section-block { margin: 0 0 32px; }
+    .section-h2 { font-size: 20px; font-weight: 800; margin: 0 0 8px; color: var(--bg-dark); }
+    .section-lead { margin: 0 0 14px; color: var(--text-muted); font-size: 14px; max-width: 760px; }
+    .example-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .example-item { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px 16px; min-width: 0; }
+    .example-h3 { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: var(--text-main); }
+    .example-text { margin: 0; color: var(--text-main); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .example-in { margin: 0 0 14px; padding: 10px 14px; background: #EEF2FF; border-radius: 6px; font-size: 14px; color: var(--text-main); overflow-wrap: anywhere; }
+
+    .workbench-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+    .card-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); min-width: 0; }
+    .panel-h2 { font-size: 18px; font-weight: 700; margin: 0 0 16px 0; color: var(--bg-dark); border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; }
+    .panel-h3 { font-size: 15px; font-weight: 700; margin: 16px 0 8px 0; color: var(--bg-dark); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 14px; font-weight: 600; color: var(--bg-dark); margin-bottom: 6px; }
+    .form-textarea, .form-input, .draft-textarea { width: 100%; padding: 10px 12px; font-size: 15px; font-family: inherit; line-height: 1.6; border: 1px solid #64748B; border-radius: 6px; background: #FFFFFF; color: var(--text-main); }
+    .form-textarea { min-height: 120px; resize: vertical; }
+    .presets-container { margin-bottom: 16px; }
+    .presets-label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .presets-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+    .preset-chip { background: #F1F5F9; border: 1px solid #94A3B8; border-radius: 6px; padding: 6px 10px; font-size: 13px; color: #1E293B; cursor: pointer; font-family: inherit; }
+    .preset-chip:hover { background: #E2E8F0; }
+    .btn-submit { width: 100%; padding: 12px 20px; background-color: var(--accent-indigo); color: #FFFFFF; border: none; border-radius: 6px; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+    .btn-submit:hover { background-color: var(--accent-indigo-hover); }
+    .btn-submit:disabled { background-color: #475569; cursor: not-allowed; }
+
+    .result-placeholder { padding: 40px 20px; text-align: center; color: var(--text-muted); background: #F8FAFC; border: 2px dashed #94A3B8; border-radius: 6px; font-size: 14px; }
+    .error-box { margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--color-rose); background: var(--bg-rose-soft); color: var(--color-rose); border-radius: 6px; font-size: 14px; font-weight: 600; }
+    .meter-container { margin-bottom: 18px; }
+    .meter-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+    .meter-label { font-size: 14px; font-weight: 700; color: var(--bg-dark); }
+    .meter-score { font-size: 22px; font-weight: 800; color: var(--bg-dark); }
+    .progress-bar-bg { height: 12px; background: #E2E8F0; border-radius: 9999px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; width: 0%; background-color: var(--color-green); transition: width 0.4s ease; }
+    .progress-bar-fill.tone-amber { background-color: var(--color-amber); }
+    .progress-bar-fill.tone-rose { background-color: var(--color-rose); }
+    .verdict-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .verdict-box { border-radius: 6px; padding: 10px 12px; text-align: center; border: 1px solid var(--border-color); background: #F1F5F9; min-width: 0; }
+    .verdict-box.tone-green { background: var(--bg-green-soft); border-color: #6EE7B7; color: var(--color-green); }
+    .verdict-box.tone-amber { background: var(--bg-amber-soft); border-color: #FCD34D; color: var(--color-amber); }
+    .verdict-box.tone-rose { background: var(--bg-rose-soft); border-color: #FDA4AF; color: var(--color-rose); }
+    .verdict-box-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; color: var(--text-muted); }
+    .verdict-box-value { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+    .topics-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .topic-tag { font-size: 13px; padding: 3px 8px; border-radius: 4px; background: #EDE9FE; color: #3730A3; font-weight: 600; }
+    .draft-box { background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 14px; margin-bottom: 14px; }
+    .draft-title { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: var(--bg-dark); }
+    .draft-textarea { min-height: 170px; resize: vertical; }
+    .draft-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+    .btn-copy { padding: 8px 14px; background: var(--bg-dark); color: #FFFFFF; border: none; border-radius: 4px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-copy:hover { background: #1E293B; }
+    .latency-note { font-size: 12px; color: var(--text-muted); }
+    .safety-notice { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+
+    .history-section { margin-top: 36px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; }
+    .history-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .history-header .panel-h2 { border: none; margin: 0; padding: 0; }
+    .history-link { font-size: 14px; color: var(--accent-indigo); font-weight: 700; }
+    .table-wrap { overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+    .data-table th { background: #F1F5F9; color: #334155; padding: 8px 12px; font-weight: 600; border-bottom: 2px solid #CBD5E1; }
+    .data-table td { padding: 8px 12px; border-bottom: 1px solid #E2E8F0; color: #1E293B; overflow-wrap: anywhere; }
+    .empty-cell { text-align: center; color: var(--text-muted); padding: 16px; }
+    .tag-tone-absorb { color: var(--color-green); font-weight: 600; }
+    .tag-tone-gentle { color: var(--color-amber); font-weight: 600; }
+    .tag-tone-firm { color: var(--color-rose); font-weight: 600; }
+
+    .plan-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .plan-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px 18px; min-width: 0; }
+    .plan-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; color: var(--text-main); }
+    .plan-card p { margin: 0; font-size: 14px; color: var(--text-main); overflow-wrap: anywhere; }
+    .spec-list { margin: 0 0 8px; padding-left: 20px; color: var(--text-main); font-size: 14px; }
+    .limits-box { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 22px; margin: 0 0 32px; }
+    .spec-table th { width: 160px; vertical-align: top; }
+
+    .toast-msg { position: fixed; bottom: 24px; right: 24px; background: var(--bg-dark); color: #FFFFFF; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 999; }
+    .toast-msg.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 900px) {
+      .workbench-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .example-grid, .io-grid, .plan-grid { grid-template-columns: minmax(0, 1fr); }
+      .hero-h1 { font-size: 24px; }
+      .spec-table th { width: 110px; }
+    }
+    @media (max-width: 500px) {
+      .verdict-cards { grid-template-columns: minmax(0, 1fr); }
+      .card-panel, .history-section, .limits-box { padding: 16px; }
+    }
+    @media print {
+      body { background: #FFFFFF; color: #000000; }
+      .header-bar, .btn-submit, .btn-sample, .presets-container, .toast-msg { display: none; }
+    }
+
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+  <header class="header-bar">
+    <div class="header-inner">
+      <div class="brand-title">ReplyGuard Solo</div>
+      <div class="brand-badges">
+        <span class="badge-pill">自動送信は一切しない</span>
+        <span class="badge-pill">登録不要・無料で試せる</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <section class="hero-section" aria-labelledby="hero-title">
+      <p class="hero-eyebrow">契約範囲外の追加要望（スコープクリープ）自動判定 ＆ 返信下書き</p>
+      <h1 id="hero-title" class="hero-h1">「ついでにこれもお願い」に、角を立てない返信を3秒で。</h1>
+      <p class="hero-sub">
+        受託制作・開発で追加の依頼が来たとき、やんわり断るか、追加の見積りを出すか。相手のメッセージを貼るだけで、返信の下書きを作ります。
+      </p>
+      <div class="io-grid">
+        <div class="io-card">
+          <h2>【入力するもの】</h2>
+          <p>相手からのメッセージ と 当初の合意範囲（任意）</p>
+        </div>
+        <div class="io-card">
+          <h2>【出力されるもの】</h2>
+          <p>範囲外かどうかの判定・想定の追加時間・選べる2通りの返信文の下書き</p>
+        </div>
+      </div>
+      <p class="safe-note">自動送信は一切しません。下書きを確認し、ご自身の言葉に直してから送ってください。</p>
+      <div class="hero-actions">
+        <button type="button" id="btn-sample" class="btn-sample">サンプルで試運転する（入力不要）</button>
+        <a href="#workbench" class="link-sub">自分のメッセージで試す</a>
+      </div>
+    </section>
+
+    <section class="section-block" aria-labelledby="sample-title">
+      <h2 id="sample-title" class="section-h2">出力の見本：範囲外の依頼には、2通りの返信を用意します</h2>
+      <p class="section-lead">契約範囲「LP 1ページ制作」に、下のメッセージが届いた場合の出力例です（例示であり、実在の案件ではありません。時間単価5,000円/時を入力した試算例です）。結果画面でも同じ形式で表示されます。</p>
+      <p class="example-in"><strong>届いたメッセージ：</strong>ついでにStripe決済も追加してもらえますか？納期は変えずにお願いします。</p>
+      <div class="example-grid">
+        <div class="example-item">
+          <h3 class="example-h3">案A：今回は当初範囲を優先納品し、追加分は次フェーズとしてご提案する返信文</h3>
+          <p class="example-text">ご担当者様
+
+お世話になっております。ご連絡ありがとうございます。
+お急ぎのご事情、承知いたしました。決済機能につきましては、当初ご契約の範囲（LP 1ページ制作）の外となるため、今回は当初の範囲を予定どおり納品することを優先させてください。
+ご要望の内容は次のフェーズとして、改めてご提案とお見積りをお出しいたします。
+
+ご都合のよいタイミングをお知らせいただければ、次フェーズのお打ち合わせを調整いたします。
+引き続きどうぞよろしくお願いいたします。</p>
+        </div>
+        <div class="example-item">
+          <h3 class="example-h3">案B：追加お見積り（想定工数つき）をご案内して今回組み込む返信文</h3>
+          <p class="example-text">ご担当者様
+
+お世話になっております。ご連絡ありがとうございます。
+お急ぎのご事情、承知いたしました。決済機能につきましては、当初ご契約の範囲（LP 1ページ制作）の外となるため、追加のお見積りとしてご案内いたします。
+想定工数は約9時間、概算費用は45,000円（税別）です。追加分の納期は、ご承認いただいた日から再調整のうえお知らせします。
+
+この内容で進めてよろしければ、一言ご返信ください。正式なお見積書をお送りします。
+引き続きどうぞよろしくお願いいたします。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="workbench" class="section-block" aria-labelledby="workbench-title">
+      <h2 id="workbench-title" class="section-h2">スコープクリープ自動判定：いますぐ試す</h2>
+      <div class="workbench-grid">
+
+        <div class="card-panel">
+          <h3 class="panel-h2">1. 相手のメッセージを入力</h3>
+
+          <div class="presets-container">
+            <div class="presets-label">クイック試運転（押すと入力欄に例文が入ります）</div>
+            <div class="presets-wrap">
+              <button type="button" class="preset-chip" data-preset="payment">ついでに決済追加（範囲外）</button>
+              <button type="button" class="preset-chip" data-preset="typo">誤字修正・リンク変更（範囲内）</button>
+              <button type="button" class="preset-chip" data-preset="app">スマホアプリ化（大きな仕様変更）</button>
+              <button type="button" class="preset-chip" data-preset="csv_urgent">納期そのままCSV出力（至急）</button>
+            </div>
+          </div>
+
+          <form id="analyze-form">
+            <div class="form-group">
+              <label class="form-label" for="client-message">相手からのメッセージ（チャット・メール本文）</label>
+              <textarea id="client-message" class="form-textarea" placeholder="例: お世話になっております。ついでにStripe決済機能も追加でお願いできますでしょうか？納期は変えずに今月末でお願いします。" required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="agreed-scope">当初合意した範囲（契約・見積の内容・任意）</label>
+              <input type="text" id="agreed-scope" class="form-input" placeholder="例: トップページLP制作 1ページ・コーディング" value="トップページLP制作 1ページ・コーディング" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="hourly-rate">あなたの時間単価（円・任意。入れると案Bの概算費用を計算します）</label>
+              <input type="number" id="hourly-rate" class="form-input" min="0" step="100" placeholder="例: 5000" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="use-ai">
+                <input type="checkbox" id="use-ai" /> AI併用モードを使う（ONにした時だけ文面を Google Gemini Decisions API Paid Tier［学習利用なし］へ送信。既定OFF＝外部送信なし）
+              </label>
+            </div>
+            <button type="submit" id="btn-submit" class="btn-submit">判定して返信文を作る</button>
+          </form>
+        </div>
+
+        <div class="card-panel" aria-live="polite">
+          <h3 class="panel-h2">2. 判定結果 ＆ 返信文の下書き</h3>
+          <div id="error-box" class="error-box" role="alert" hidden></div>
+          <div id="result-placeholder" class="result-placeholder">
+            左のフォームにメッセージを入れて「判定して返信文を作る」を押すと、上の見本と同じ形式で表示されます。
+          </div>
+
+          <div id="result-content" hidden>
+            <div class="meter-container">
+              <div class="meter-header">
+                <span class="meter-label">範囲外の可能性</span>
+                <span id="meter-score" class="meter-score">0%</span>
+              </div>
+              <div class="progress-bar-bg"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
+            </div>
+
+            <div class="verdict-cards">
+              <div id="box-verdict" class="verdict-box">
+                <div class="verdict-box-title">判定</div>
+                <div id="val-verdict" class="verdict-box-value">-</div>
+              </div>
+              <div id="box-effort" class="verdict-box">
+                <div class="verdict-box-title">想定の追加時間</div>
+                <div id="val-effort" class="verdict-box-value">-</div>
+              </div>
+              <div id="box-urgency" class="verdict-box">
+                <div class="verdict-box-title">急ぎ度</div>
+                <div id="val-urgency" class="verdict-box-value">-</div>
+              </div>
+            </div>
+
+            <div id="topics-wrap" class="topics-wrap"></div>
+
+            <div id="drafts-out" hidden>
+              <div class="draft-box">
+                <h4 class="draft-title">案A：今回は当初範囲を優先納品し、追加分は次フェーズとしてご提案する返信文</h4>
+                <textarea id="draft-a" class="draft-textarea" aria-label="案Aの返信文の下書き" readonly></textarea>
+                <div class="draft-actions">
+                  <button type="button" class="btn-copy" data-copy="draft-a">案Aをコピー</button>
+                </div>
+              </div>
+              <div class="draft-box">
+                <h4 class="draft-title">案B：追加お見積り（想定工数つき）をご案内して今回組み込む返信文</h4>
+                <textarea id="draft-b" class="draft-textarea" aria-label="案Bの返信文の下書き" readonly></textarea>
+                <div class="draft-actions">
+                  <button type="button" class="btn-copy" data-copy="draft-b">案Bをコピー</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="draft-single-out" class="draft-box" hidden>
+              <h4 class="draft-title">返信文の下書き（当初の範囲内なので、追加費用なしでお受けする文面）</h4>
+              <textarea id="draft-single" class="draft-textarea" aria-label="返信文の下書き" readonly></textarea>
+              <div class="draft-actions">
+                <button type="button" class="btn-copy" data-copy="draft-single">返信文をコピー</button>
+              </div>
+            </div>
+
+            <p id="latency-display" class="latency-note"></p>
+            <p class="safety-notice">
+              ※ この返信文はあくまで下書きです。外部へ自動送信されることはありません。必ず内容を確認し、ご自身の状況に合わせて直してから送ってください。
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="history-section" aria-labelledby="history-title">
+      <div class="history-header">
+        <h2 id="history-title" class="panel-h2">直近の判定履歴</h2>
+        <a href="/api/history?format=csv" id="csv-link" download="replyguard_history.csv" class="history-link">CSVで書き出す</a>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">受付番号</th>
+              <th scope="col">日時</th>
+              <th scope="col">範囲外の可能性</th>
+              <th scope="col">おすすめの対応</th>
+              <th scope="col">想定の追加時間</th>
+              <th scope="col">メッセージの冒頭</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr id="history-empty"><td colspan="6" class="empty-cell">履歴はまだありません。上の試運転を1回押すと、このブラウザの履歴としてここに残ります。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section-block" id="plans" aria-labelledby="plans-title">
+      <h2 id="plans-title" class="section-h2">料金と、いま使える範囲</h2>
+      <div class="plan-grid">
+        <div class="plan-card">
+          <h3>無料の試運転</h3>
+          <p>ブラウザでそのまま使えます。1日30回まで・登録不要・カード入力なし。</p>
+        </div>
+        <div class="plan-card">
+          <h3>Proプラン</h3>
+          <p>オンライン決済は準備中です。現在はブラウザの無料試運転（1日30回・登録不要）と、下の相談フォームからのチーム向け専用辞書の構築・導入相談を受け付けています。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="limits-box" id="limits" aria-labelledby="limits-title">
+      <h2 id="limits-title" class="section-h2">できないこと・手動確認が必要な範囲</h2>
+      <h3 class="panel-h3">対象外（人間の確認が必要）</h3>
+      <ul class="spec-list">
+        <li>生成文面は下書きです。自動送信は一切行いません。送信前に必ずご自身で内容を確認してください。</li>
+        <li>正式な見積金額・納期・法的な契約条件は、人間が確認して決める必要があります。本ツールは確定しません。</li>
+      </ul>
+      <h3 class="panel-h3">うまく動かないとき</h3>
+      <ul class="spec-list">
+        <li>メッセージが空のときは、判定せずに入力を促します。</li>
+        <li>1日の無料枠に達したときは、推測で補わず、そこで止まります。</li>
+      </ul>
+    </section>
+
+    <section id="spec" class="section-block" aria-labelledby="spec-title">
+      <h2 id="spec-title" class="section-h2">検証条件・技術仕様</h2>
+      <p class="section-lead">この画面の数値や処理の裏づけです。測定日・環境・件数・実測速度・通信先を、ここにまとめています。</p>
+      <div class="table-wrap">
+        <table class="data-table spec-table">
+          <tbody>
+            <tr><th scope="row">測定日</th><td>2026-11-12</td></tr><tr><th scope="row">測定環境</th><td>開発用パソコン1台でのローカル実行（Windows ／ Node.js v24 ／ 内蔵データベース SQLite）</td></tr><tr><th scope="row">テスト件数（n）</th><td>単体テストと通し確認 n=8（スコープ内・スコープ外・至急・空入力・利用上限・履歴の書き出しなど）</td></tr><tr><th scope="row">実測速度</th><td>ローカルの判定：1回あたり 5ミリ秒未満（n=8、2026-11-12 測定）。AIを併用する場合は通信状況により0.3秒前後の上限で待ち、間に合わなければローカル判定の結果を返します。</td></tr><tr><th scope="row">判定のしくみ</th><td>ローカルの判定ルール（「追加」「ついで」「別途」などの言い回しや機能名）で範囲外の確率を計算。AIが使える環境では、意味まで読む判定を併用します。</td></tr><tr><th scope="row">通信先</th><td>既定（チェックOFFのローカル判定）：メッセージを外部へ送信しません。入力欄で「AI併用モードを使う」をONにしたときだけ：入力文面を Google Gemini Decisions API Paid Tier（学習利用なし）へ送信します。</td></tr><tr><th scope="row">保存されるもの</th><td>判定結果とメッセージの冒頭80文字を、本サービスの記録領域にブラウザごとに分けて保存します。</td></tr><tr><th scope="row">無料枠</th><td>1日30回まで（ブラウザごと・登録不要）</td></tr><tr><th scope="row">推定値の意味</th><td>範囲外の確率・想定工数・費用は目安の推定値です。正式な見積金額・納期・契約条件は、必ずご自身で確認して決めてください。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">チーム向け専用辞書・導入のご相談</h2>
+      <p class="inquiry-lead">「自社や取引先の言い回しに合わせた判定にしたい」「チームで使いたい」という方は、下のフォームからご相談シート控えを作成してください（月額プランのオンライン決済は準備中です）。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="手元の実メッセージ1件で判定サンプルを見たい">手元の実メッセージ1件で判定サンプルを見たい</option><option value="チーム向けの専用辞書（自社の言い回し）を作りたい">チーム向けの専用辞書（自社の言い回し）を作りたい</option><option value="導入・お見積りの相談">導入・お見積りの相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: Web制作の受託チーム（5名）向けに、自社の標準料金表と過去事例を組み込んだ返信判定ルールを作りたいです。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#workbench" class="inquiry-alt-link">上の無料試運転へ戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "ReplyGuard Solo" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+  </main>
+
+  <div id="toast" class="toast-msg" role="status"></div>
+
+  <script>
+    (function () {
+      var PRESETS = {
+        payment: {
+          msg: "お世話になっております。サイト制作の件、とても順調で助かっております！ついでに恐縮なのですが、商品を購入できるStripe決済機能も追加で組み込んでおいていただくことは可能でしょうか？納期は変えずに今月末の公開でお願いしたいです。",
+          scope: "トップページLP制作 1ページ・コーディング"
+        },
+        typo: {
+          msg: "お疲れ様です！制作いただいたページを確認いたしました。3段落目の『お気軽にお問い合わせださい』を『お気軽にお問い合わせください』へ誤字の修正をお願いできますでしょうか？また問い合わせリンクを新しいURLへ差し替えておいていただけますと幸いです。",
+          scope: "会社案内サイト 3ページ制作"
+        },
+        app: {
+          msg: "社内で検討した結果、やはりWebサイトではなくiOS/Androidのスマホアプリとして一から作り直したいという話になりました。全面的に変更をお願いできますでしょうか？",
+          scope: "Webブラウザ向け会員ポータルサイト"
+        },
+        csv_urgent: {
+          msg: "至急のお願いです！明日の朝までに管理画面から顧客データをCSV出力する機能を追加してもらえませんか？大至急よろしくお願いいたします。",
+          scope: "管理画面UIデザイン実装"
+        }
+      };
+
+      var TONE_LABELS = {
+        absorb: '範囲内（追加費用なしで対応できそう）',
+        gentle_boundary: '範囲外の可能性（境界の確認が必要）',
+        firm_quote: '明確に範囲外（追加見積りが必要）'
+      };
+      var TONE_SHORT = { absorb: '範囲内', gentle_boundary: '線引きを提案', firm_quote: '追加見積りを提案' };
+      var TONE_CLASS = { absorb: 'absorb', gentle_boundary: 'gentle', firm_quote: 'firm' };
+      var EFFORT_LABELS = { low: '作業量は小', medium: '作業量は中', high: '作業量は大' };
+      var ERROR_LABELS = {
+        QUOTA_EXCEEDED: '本日の無料判定枠（30回）に達しました。明日0時にリセットされます。下の相談フォームからもご相談いただけます。',
+        EMPTY_CLIENT_MESSAGE: '相手からのメッセージを入力してください。',
+        INVALID_JSON: '送信内容を読み取れませんでした。ページを開き直してもう一度お試しください。'
+      };
+
+      function $(id) { return document.getElementById(id); }
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      var memCk = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      function ck() {
+        return (window.__zolGetClientKey ? window.__zolGetClientKey() : memCk);
+      }
+      function showToast(msg) {
+        var t = $('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(function () { t.classList.remove('show'); }, 2500);
+      }
+      function showError(msg) {
+        var box = $('error-box');
+        box.textContent = msg;
+        box.hidden = false;
+      }
+      function clearError() { $('error-box').hidden = true; }
+
+      function loadPreset(key) {
+        var p = PRESETS[key];
+        if (!p) return;
+        $('client-message').value = p.msg;
+        $('agreed-scope').value = p.scope;
+      }
+
+      function setTone(el, cls) {
+        el.classList.remove('tone-green', 'tone-amber', 'tone-rose');
+        if (cls) el.classList.add(cls);
+      }
+
+      function renderResult(a, clientLatencyMs) {
+        $('result-placeholder').hidden = true;
+        $('result-content').hidden = false;
+
+        var prob = Math.round(a.scopeCreepProb * 100);
+        $('meter-score').textContent = prob + '%';
+        var fill = $('progress-bar-fill');
+        fill.style.width = prob + '%';
+        fill.classList.remove('tone-amber', 'tone-rose');
+        var verdict = $('box-verdict');
+        var vt = $('val-verdict');
+        if (a.recommendedTone === 'absorb') {
+          setTone(verdict, 'tone-green');
+          vt.textContent = '範囲内（追加費用なしで対応できそう）';
+        } else if (a.recommendedTone === 'gentle_boundary') {
+          fill.classList.add('tone-amber');
+          setTone(verdict, 'tone-amber');
+          vt.textContent = '範囲外の可能性（境界の確認が必要）';
+        } else {
+          fill.classList.add('tone-rose');
+          setTone(verdict, 'tone-rose');
+          vt.textContent = '明確に範囲外（追加見積りが必要）';
+        }
+
+        $('val-effort').textContent = a.estimatedHours + '時間（' + (EFFORT_LABELS[a.effortRisk] || '作業量は不明') + '）';
+        $('val-urgency').textContent = a.urgency === 'urgent' ? '至急・短納期' : '通常';
+
+        var topicsWrap = $('topics-wrap');
+        topicsWrap.innerHTML = '';
+        (a.topics || a.detectedTopics || []).forEach(function (t) {
+          var span = document.createElement('span');
+          span.className = 'topic-tag';
+          span.textContent = t;
+          topicsWrap.appendChild(span);
+        });
+
+        var outOfScope = a.recommendedTone !== 'absorb' && a.draftOptionA && a.draftOptionB;
+        $('drafts-out').hidden = !outOfScope;
+        $('draft-single-out').hidden = !!outOfScope;
+        if (outOfScope) {
+          $('draft-a').value = a.draftOptionA;
+          $('draft-b').value = a.draftOptionB;
+        } else {
+          $('draft-single').value = a.draftReply || '';
+        }
+
+        var ms = Math.max(1, Number(a.latencyMs || clientLatencyMs || 1));
+        var how = (a.source && a.source !== 'heuristic')
+          ? 'AI併用判定（Google Gemini Decisions API Paid Tier）'
+          : (a.apiAttempted
+              ? 'ローカル判定（AI併用を試行しましたが応答時間切れ等のためローカル結果を採用）'
+              : (a.useAiRequested && a.fallbackReason === 'NO_GEMINI_API_KEY'
+                  ? 'ローカル判定（この環境ではAI連携が無効のため外部送信せずローカル判定を実行）'
+                  : 'ローカル判定（外部送信なし）'));
+        $('latency-display').textContent = '判定にかかった時間：約' + ms + 'ミリ秒 ／ ' + how + ' ／ 判定：' + (TONE_LABELS[a.recommendedTone] || '');
+      }
+
+      function historyRow(r) {
+        var tr = document.createElement('tr');
+        var cls = TONE_CLASS[r.recommended_tone] || 'gentle';
+        tr.innerHTML =
+          '<td>#' + esc(r.id) + '</td>' +
+          '<td>' + esc(String(r.created_at || '').slice(0, 16).replace('T', ' ')) + '</td>' +
+          '<td><strong>' + Math.round(Number(r.scope_creep_prob || 0) * 100) + '%</strong></td>' +
+          '<td><span class="tag-tone-' + cls + '">' + esc(TONE_SHORT[r.recommended_tone] || '要確認') + '</span></td>' +
+          '<td>' + esc(r.estimated_hours) + '時間</td>' +
+          '<td>' + esc(String(r.message_snippet || '').slice(0, 45)) + '…</td>';
+        return tr;
+      }
+
+      function renderHistory(rows) {
+        var tbody = $('history-tbody');
+        tbody.innerHTML = '';
+        if (!rows || !rows.length) {
+          tbody.innerHTML = '<tr id="history-empty"><td colspan="6" class="empty-cell">履歴はまだありません。上の試運転を1回押すと、このブラウザの履歴としてここに残ります。</td></tr>';
+          return;
+        }
+        rows.forEach(function (r) { tbody.appendChild(historyRow(r)); });
+      }
+
+      async function loadHistory() {
+        try {
+          var csv = $('csv-link');
+          if (csv) csv.setAttribute('href', '/api/history?format=csv&clientKey=' + encodeURIComponent(ck()));
+          var res = await fetch('/api/history', { headers: { 'x-client-key': ck() } });
+          if (!res.ok) return;
+          var json = await res.json();
+          if (json && json.ok) renderHistory(json.history);
+        } catch (e) { /* 静的プレビューでは履歴を読み込まない */ }
+      }
+
+      async function runAnalyze() {
+        var msg = $('client-message').value.trim();
+        var scope = $('agreed-scope').value.trim();
+        var rate = Number($('hourly-rate').value);
+        if (!msg) { showError(ERROR_LABELS.EMPTY_CLIENT_MESSAGE); return; }
+        clearError();
+
+        var btn = $('btn-submit');
+        var label = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '判定しています…';
+        try {
+          var t0 = performance.now();
+          var useAiEl = $('use-ai');
+          var payload = { clientMessage: msg, agreedScope: scope, useAi: Boolean(useAiEl && useAiEl.checked) };
+          if (rate > 0) payload.hourlyRate = rate;
+          var res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-client-key': ck() },
+            body: JSON.stringify(payload)
+          });
+          var data = await res.json();
+          var t1 = performance.now();
+          if (data.ok) {
+            renderResult(data.analysis, Math.round(t1 - t0));
+            loadHistory();
+          } else {
+            showError(ERROR_LABELS[data.error] || data.message || '判定できませんでした。しばらくしてからもう一度お試しください。');
+          }
+        } catch (err) {
+          var isStatic = typeof location !== 'undefined' && location.protocol === 'file:';
+          showError(
+            isStatic
+              ? 'この保存版ファイル（オフライン見本）ではブラウザ単体での試運転は実行できません。上の出力見本をご覧いただくか、ページ下部のご相談フォームから無料サンプル作成をご依頼ください。'
+              : '通信に失敗しました。ネットワークを確認して、もう一度お試しください。'
+          );
+        } finally {
+          btn.disabled = false;
+          btn.textContent = label;
+        }
+      }
+
+      function copyFrom(id) {
+        var ta = $(id);
+        if (!ta || !ta.value) return;
+        var done = function () { showToast('返信文の下書きをコピーしました'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(ta.value).then(done).catch(function () { ta.select(); document.execCommand('copy'); done(); });
+        } else {
+          ta.select();
+          document.execCommand('copy');
+          done();
+        }
+      }
+
+      $('analyze-form').addEventListener('submit', function (e) { e.preventDefault(); runAnalyze(); });
+      $('btn-sample').addEventListener('click', function () {
+        loadPreset('payment');
+        var wb = $('workbench');
+        if (wb && wb.scrollIntoView) wb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        runAnalyze();
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-preset]'), function (b) {
+        b.addEventListener('click', function () { loadPreset(b.getAttribute('data-preset')); });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (b) {
+        b.addEventListener('click', function () { copyFrom(b.getAttribute('data-copy')); });
+      });
+
+      // 履歴はブラウザごと（クライアントキー）に読み込む。キー発行は下の相談フォームのスクリプトが先に済ませる
+      window.addEventListener('load', loadHistory);
+    })();
+  </script>
+</body>
+</html>

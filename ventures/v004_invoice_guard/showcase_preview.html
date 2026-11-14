@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>買掛請求書の「単価10倍桁ズレ・過払い」を、振込の前に止める — 請求書ゲート</title>
+<style>
+:root{--paper:#faf7f2;--ink:#2b2926;--muted:#5c574f;--accent:#b4502a;--line:#d9d2c5;--tint:#f1e3d8}
+*{box-sizing:border-box}
+html{font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;background:var(--paper);color:var(--ink);line-height:1.7}
+body{margin:0;padding:0 20px 64px;background:var(--paper);color:var(--ink)}
+code,pre{font-family:ui-monospace,Consolas,monospace;font-size:14px;line-height:1.5;overflow-wrap:anywhere;white-space:pre-wrap}
+main{max-width:880px;margin:0 auto}
+header{padding:48px 0 16px}
+h1{font-size:34px;line-height:1.3;font-weight:700;margin:0 0 12px}
+h2{font-size:22px;line-height:1.4;font-weight:700;margin:40px 0 12px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+h3{font-size:18px;line-height:1.5;font-weight:700;margin:0 0 8px}
+p,li,td,a,label{font-size:16px;line-height:1.7;font-weight:400}
+th,small{font-size:14px;line-height:1.5}
+th{font-weight:700;text-align:left}
+small{font-weight:400;color:var(--muted)}
+b{font-weight:700}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,textarea:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.disclosure{border:1px solid var(--ink);background:#fff;padding:12px 16px;margin:16px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px}
+.card{border:1px solid var(--line);background:#fff;padding:16px}
+.card.stop{border:2px solid var(--accent);background:var(--tint)}
+.verdict{display:inline-block;padding:2px 10px;font-weight:700;background:var(--ink);color:var(--paper);font-size:16px;line-height:1.7}
+.verdict.stop{background:var(--accent);color:#fff}
+table{width:100%;border-collapse:collapse;margin:8px 0}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:12px 24px;font-weight:700;text-decoration:none;margin:8px 8px 0 0}
+.cta.sub{background:#fff;color:var(--ink);border:2px solid var(--ink)}
+.cta:hover{background:var(--ink);color:#fff}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.presets button{background:#fff;color:var(--ink);border:2px solid var(--ink);padding:8px 14px}
+textarea{width:100%;min-height:160px;font:inherit;font-size:16px;padding:8px;border:1px solid var(--ink);background:#fff;color:var(--ink)}
+textarea.hist{min-height:64px}
+button{font:inherit;font-size:16px;font-weight:700;background:var(--accent);color:#fff;border:0;padding:12px 24px;cursor:pointer}
+#result{background:#fff;border:1px solid var(--line);padding:12px 16px;margin-top:16px;min-height:60px}
+@media print{body{background:#fff}.cta,button{display:none}}
+
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p><small>Zero-One Venture Lab ／ 買掛請求書 振込前ゲート</small></p>
+  <h1>請求書の桁ズレを、支払う前に止める</h1>
+  <p>請求書PDFなどからコピーした明細の文字列（またはTSV）を貼るだけで、過去単価からの10倍桁ズレ・税率ごとの端数ミス・合計の不一致・登録番号の誤り・二重計上を、振込や会計ソフト取込の前に判定します。※画像の文字を自動で読み取る機能（OCR）はありません。</p>
+  <a class="cta" href="#order">ブラウザで無料試運転（登録不要）</a>
+  <a class="cta sub" href="#inquiry-form">検品を依頼する</a>
+  <p class="disclosure">通信先: 算術・適格番号・二重計上検査＝ローカル完結（外部送信なし）／意味論検品＝Google Gemini Decisions API Paid Tier（学習利用なし）</p>
+</header>
+
+<h2>実際に検算した2件の結果</h2>
+<p>下の数値は、この画面を作成した時点で検算エンジンを実行した結果です（例示データ・実在の取引ではありません）。</p>
+<div class="grid">
+<article class="card">
+  <h3>正しい請求書</h3>
+  <p><span class="verdict">合格（検算の範囲では異常なし）</span></p>
+  <table>
+    <tr><th>10%対象小計</th><td class="num">384,000円</td></tr>
+    <tr><th>8%対象小計</th><td class="num">10,000円</td></tr>
+    <tr><th>消費税（税率ごと1回端数処理）</th><td class="num">39,200円</td></tr>
+    <tr><th>再計算合計</th><td class="num">433,200円</td></tr>
+    <tr><th>記載合計</th><td class="num">433,200円</td></tr>
+  </table>
+  <p>欠陥なし。会計ソフト取込用のCSV（freee / マネーフォワード）を出力できます。</p>
+</article>
+<article class="card stop">
+  <h3>単価 128,000円 → 1,280,000円 の請求書</h3>
+  <p><span class="verdict stop">欠陥を検知したため自動停止</span></p>
+  <table>
+    <tr><th>10%対象小計</th><td class="num">3,840,000円</td></tr>
+    <tr><th>8%対象小計</th><td class="num">10,000円</td></tr>
+    <tr><th>消費税（税率ごと1回端数処理）</th><td class="num">384,800円</td></tr>
+    <tr><th>再計算合計</th><td class="num">4,234,800円</td></tr>
+    <tr><th>記載合計</th><td class="num">4,234,800円</td></tr>
+  </table>
+  <ul><li><b>過去単価からの10倍桁ズレの疑い</b><br>1行目「ノートPC」: 単価 1280000 は過去実績 128000 の 10 倍（桁ズレの疑い） <small>損失リスク 3,456,000円</small></li></ul>
+</article>
+</div>
+<p>桁ズレ版は、過去実績の単価との比較で停止し、このまま払うと <b>3,456,000円</b> の過払いリスクがあります。</p>
+
+<h2>止める7つの欠陥</h2>
+<table>
+<tr><th>検査</th><th>画面に表示される判定</th></tr>
+<tr><td>登録番号の形式（T＋13桁）</td><td>登録番号の形式不正（T＋13桁ではない）</td></tr>
+<tr><td>法人番号の検査数字（モジュラス9）</td><td>法人の登録番号の検査数字が不一致</td></tr>
+<tr><td>数量×単価≠金額</td><td>数量×単価と金額が一致しない</td></tr>
+<tr><td>過去単価の8倍以上・1/8以下（10倍桁ズレ）</td><td>過去単価からの10倍桁ズレの疑い</td></tr>
+<tr><td>税率ごと1回の端数処理</td><td>税率ごと1回の端数処理と消費税額が不一致</td></tr>
+<tr><td>合計の不一致</td><td>合計金額が再計算と一致しない</td></tr>
+<tr><td>同一帳票の再提出（二重計上）</td><td>同一の請求書を二重に提出している疑い</td></tr>
+</table>
+<p>AI検品に接続できない時は「判定不能」として止まり、推測で合格にはしません。</p>
+
+<h2 id="order">ブラウザで無料試運転（登録不要）</h2>
+<p>下の見本ボタンを押すと、全角数字・令和の日付・値引き行・TSV など、実際の請求書に多い「汚れた」文字列がそのまま入ります。自分の請求書の明細を貼ってもかまいません。</p>
+<form id="audit-form">
+  <div class="presets">
+    <button type="button" data-preset="fullwidth">全角数字・令和日付・8%と10%混在</button>
+    <button type="button" data-preset="discount">(株)表記・値引き行あり</button>
+    <button type="button" data-preset="tsv">TSV（表計算からの貼り付け）</button>
+    <button type="button" data-preset="shift">単価10倍の桁ズレ</button>
+  </div>
+  <p><label for="doc">請求書の文字列（PDFからコピーした明細・TSVなど）</label></p>
+  <textarea id="doc" name="doc"></textarea>
+  <p><label for="hist">過去の単価（任意。1行に「品名=単価」。桁ズレの比較に使います）</label></p>
+  <textarea id="hist" name="hist" class="hist" placeholder="ノートPC=128000"></textarea>
+  <p><button type="submit">検算する</button></p>
+</form>
+<div id="result" aria-live="polite"><p>ここに判定結果が表示されます。</p></div>
+
+<h2>検証条件・技術仕様</h2>
+<table>
+<tr><th>項目</th><th>内容</th><th>測定日・条件・件数</th></tr>
+<tr><td>自動テスト</td><td>10件のテストケースがすべて通過</td><td>2026-11-12 ／ n=10（法人番号の検査数字・令和日付・汚れた請求書3種・桁ズレ・端数処理・二重計上・判定不能の停止・画面描画）</td></tr>
+<tr><td>この画面の2件の検算時間</td><td>2ms</td><td>2026-11-12 ／ 実行環境: Node.js v24.14.0（ローカル）／ 例示帳票 n=2 の合計実測</td></tr>
+<tr><td>実装方式</td><td>Hono ＋ SQLite（二重計上の台帳）</td><td>2026-11-12 ／ 台帳は検査のたびに保存、この画面の試運転では保存しません</td></tr>
+</table>
+
+<h2>未対応の範囲と、停止したときの次の手</h2>
+<ul>
+<li>画像やスキャンPDFの文字を読み取る機能（OCR）はありません。PDFからコピーした文字列、またはTSV・CSVを貼ってください。</li>
+<li>個人事業主の登録番号は、実在・失効の確認が必要です。国税庁の適格請求書発行事業者公表サイトで確認してください。</li>
+<li>免税事業者からの仕入れに対する経過措置、勘定科目の最終判断は、税理士または経理責任者の確認が必要です。</li>
+<li>欠陥を検知した請求書は、会計ソフト取込用のCSVを出力せず止まります。請求元に訂正版を依頼してください。</li>
+</ul>
+
+
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">請求書検品のご依頼・ご相談フォーム</h2>
+      <p class="inquiry-lead">「手元の請求書1件で、桁ズレや税額の検算結果を見たい」「自社の請求書の書式や過去単価の辞書に合わせて導入したい」という場合は、下のフォームから送信してください。決済情報の入力は不要です。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="手元の請求書1件の無料検算サンプル希望">手元の請求書1件の無料検算サンプル希望</option><option value="社内用の検品環境の構築見積り相談">社内用の検品環境の構築見積り相談</option><option value="過去単価の辞書・CSV列の適合相談">過去単価の辞書・CSV列の適合相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: 毎月の買掛請求書（約40件）について、振込前の単価10倍ズレと税額チェックを導入したいです。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#order" class="inquiry-alt-link">上の無料試運転へ戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "請求書ゲート" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+</main>
+<script type="application/json" id="rule-catalog">{"INVALID_T_NUMBER_FORMAT":{"label":"登録番号の形式不正（T＋13桁ではない）","next":"請求元に登録番号（T＋13桁）を確認してください。"},"CORP_T_NUMBER_CHECKDIGIT_FAIL":{"label":"法人の登録番号の検査数字が不一致","next":"1桁の転記ミスの可能性があります。原本と照合し、国税庁の公表サイトで実在を確認してください。"},"LINE_MATH_MISMATCH":{"label":"数量×単価と金額が一致しない","next":"該当行の数量・単価・金額を原本と照合してください。"},"DIGIT_SHIFT_10X":{"label":"過去単価からの10倍桁ズレの疑い","next":"請求元に単価を確認し、訂正版の請求書を依頼してください（振込は保留）。"},"TAX_SINGLE_ROUNDING_MISMATCH":{"label":"税率ごと1回の端数処理と消費税額が不一致","next":"消費税は税率ごとに合計額へ1回だけ端数処理します。請求元に計算根拠を確認してください。"},"TOTAL_MISMATCH":{"label":"合計金額が再計算と一致しない","next":"明細の漏れ・値引き行・消費税額を原本と照合してください。"},"DUPLICATE_INVOICE":{"label":"同一の請求書を二重に提出している疑い","next":"支払済みの請求書と同一でないか確認してください。"},"NO_LINES":{"label":"明細行を読み取れない","next":"品名・数量・単価・金額が並ぶ明細部分も含めて貼り付けてください。"},"SEMANTIC_FLAG":{"label":"品名や請求元の不整合の疑い（AI意味論検品）","next":"品名・請求元を目視で確認してください。"}}</script>
+<script type="application/json" id="preset-data">{"fullwidth":{"text":"請求元：株式会社サンプル商事\n登録番号：T２３００００００００００１\n請求書番号 INV-0001\n請求日 令和８年１１月１２日\nノートPC　　　　１０　　１２８，０００円　　１，２８０，０００円\n※ 弁当（軽減）  20  500  10,000\n値引き  ▲5,000\n消費税(10%) 127,500\n消費税(8%) 800\n合計 １，４１３，３００円","history":""},"discount":{"text":"請求元：(株)テスト工業\n登録番号：T1300000000002\n請求書番号 A-2\n請求日 2026/11/12\nケーブル  10  1,500  15,000\n保守費  1  20,000  20,000\n値引き  △3,000\n合計 35,200円","history":""},"tsv":{"text":"請求元\t株式会社タブ商会\n登録番号\tT9300000000003\n請求書番号\tTSV-3\n請求日\t2026-11-12\n品名\t数量\t単価\t金額\nコピー用紙\t5\t480\t2,400\n※軽減 米\t2\t1,000\t2,000\n合計\t4,800","history":""},"shift":{"text":"請求元：株式会社サンプル商事\n登録番号：T5202611120001\n請求書番号 SAMPLE-002\n請求日 令和8年11月12日\nノートPC  3  1,280,000  3,840,000\n※ 弁当（軽減）  20  500  10,000\n消費税(10%) 384,000\n消費税(8%) 800\n合計 4,234,800円","history":"ノートPC=128000"}}</script>
+<script>
+(function () {
+  var LIVE = false;
+  var CAT = JSON.parse(document.getElementById('rule-catalog').textContent);
+  var PRE = JSON.parse(document.getElementById('preset-data').textContent);
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var yen = function (n) { return Number(n).toLocaleString('ja-JP') + '円'; };
+  function nz(s) { return String(s == null ? '' : s).normalize('NFKC').replace(/　/g, ' '); }
+
+  function parseYen(tok) {
+    if (tok == null) return null;
+    var t = nz(tok).trim();
+    if (!t) return null;
+    var neg = /^[▲△−-]/.test(t) || /^\(.*\)$/.test(t);
+    t = t.replace(/[▲△※\-−¥￥円\s(),]/g, '').replace(/^軽減/, '');
+    if (!/^\d+(\.\d+)?$/.test(t)) return null;
+    var n = Number(t);
+    return neg ? -n : n;
+  }
+  function normDate(s) {
+    var t = nz(s);
+    var r = t.match(/令和\s*(\d{1,2}|元)\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
+    if (r) return (2018 + (r[1] === '元' ? 1 : Number(r[1]))) + '-' + ('0' + r[2]).slice(-2) + '-' + ('0' + r[3]).slice(-2);
+    var m = t.match(/(\d{4})\s*[-/.年]\s*(\d{1,2})\s*[-/.月]\s*(\d{1,2})/);
+    return m ? m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2) : null;
+  }
+  function splitFields(line) {
+    if (line.indexOf('\t') >= 0) return line.split('\t').map(function (s) { return s.trim(); });
+    if (/,/.test(line) && !/\s{2,}/.test(line)) {
+      var parts = line.split(/(?<!\d),|,(?!\d{3}(?!\d))/).map(function (s) { return s.trim(); });
+      if (parts.length >= 3) return parts;
+    }
+    return line.split(/\s{2,}|\s(?=[▲△]?\d)/).map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+  function parseItem(raw) {
+    var line = nz(raw).trim();
+    if (!line) return null;
+    var fields = splitFields(line);
+    if (fields.length < 2) return null;
+    var nums = [], nameParts = [];
+    fields.forEach(function (f) {
+      var v = parseYen(f);
+      if (v !== null && nameParts.length > 0) nums.push(v);
+      else if (nums.length === 0) nameParts.push(f);
+    });
+    var name = nameParts.join(' ').trim();
+    if (!name || nums.length === 0) return null;
+    var reduced = /※|軽減|8\s*%/.test(line);
+    if (nums.length === 1) return { name: name, qty: 1, unitPrice: nums[0], amount: nums[0], isReduced8: reduced };
+    if (nums.length === 2) return { name: name, qty: nums[0], unitPrice: nums[1], amount: nums[0] * nums[1], isReduced8: reduced };
+    var t3 = nums.slice(-3);
+    return { name: name, qty: t3[0], unitPrice: t3[1], amount: t3[2], isReduced8: reduced };
+  }
+  var RE = {
+    vendor: /^(?:請求元|発行元|取引先|仕入先|会社名)(?:\s*[:：]|\s)\s*(.+)$/,
+    reg: /(?:登録番号|適格請求書発行事業者登録番号|T番号)\s*[:：]?\s*(T\s*[\d\s-]{10,20}|[\d-]{10,20})/i,
+    no: /^(?:請求書?番号|請求No\.?|納品書?番号|見積書?番号|伝票番号)\s*[:：]?\s*(\S+)/i,
+    date: /^(?:請求日|発行日|日付|納品日)\s*[:：]?\s*(.+)$/,
+    total: /^(?:合計金額|請求金額|税込合計|ご請求額|総合計|合計)\s*[:：]?\s*([▲△-]?[\d,]+)/,
+    t10: /^消費税(?:額)?\s*[(（]?\s*10\s*%[)）]?\s*[:：]?\s*([▲△-]?[\d,]+)/,
+    t8: /^消費税(?:額)?\s*[(（]?\s*(?:軽減\s*)?8\s*%[)）]?\s*[:：]?\s*([▲△-]?[\d,]+)/
+  };
+  function parseDoc(text) {
+    var doc = { vendorName: null, reg: null, invoiceNo: null, invoiceDate: null, total: null, st10: null, st8: null, lines: [] };
+    String(text).split(/\r?\n/).forEach(function (rawLine) {
+      var line = nz(rawLine).trim(), m;
+      if (!line) return;
+      if ((m = line.match(RE.vendor))) { doc.vendorName = m[1].trim(); return; }
+      if ((m = line.match(RE.reg))) { var r = m[1].replace(/[\s-]/g, '').toUpperCase(); doc.reg = r.charAt(0) === 'T' ? r : 'T' + r; return; }
+      if ((m = line.match(RE.no))) { doc.invoiceNo = m[1]; return; }
+      if ((m = line.match(RE.date))) { doc.invoiceDate = normDate(m[1]); return; }
+      if ((m = line.match(RE.t10))) { doc.st10 = parseYen(m[1]); return; }
+      if ((m = line.match(RE.t8))) { doc.st8 = parseYen(m[1]); return; }
+      if ((m = line.match(RE.total))) { doc.total = parseYen(m[1]); return; }
+      if (/^(?:品名|品目|摘要|項目)\s*[\t,]/.test(line)) return;
+      if (!doc.vendorName && /(?:株式会社|有限会社|合同会社|\(株\)|\(有\)|\(同\))/.test(line) && !/\d{3}/.test(line)) { doc.vendorName = line; return; }
+      var it = parseItem(rawLine);
+      if (it) doc.lines.push(it);
+    });
+    if (!doc.invoiceDate) doc.invoiceDate = normDate(text);
+    return doc;
+  }
+  function corpOk(t13) {
+    if (!/^\d{13}$/.test(t13)) return false;
+    var s = t13.slice(1), sum = 0;
+    for (var n = 1; n <= 12; n++) sum += Number(s.charAt(12 - n)) * (n % 2 === 1 ? 1 : 2);
+    return String(9 - (sum % 9)) + s === t13;
+  }
+  function parseHistory(text) {
+    var h = {};
+    String(text || '').split(/\r?\n/).forEach(function (l) {
+      var m = nz(l).trim().match(/^(.+?)\s*[=＝:：\s]\s*([\d,]+)\s*円?$/);
+      if (m) h[m[1].trim()] = Number(m[2].replace(/,/g, ''));
+    });
+    return h;
+  }
+  function localAudit(text, hist) {
+    var doc = parseDoc(text), defects = [], advisories = [];
+    function add(code, message, extra) { var d = { code: code, message: message }; if (extra) for (var k in extra) d[k] = extra[k]; defects.push(d); }
+    if (!doc.reg || !/^T\d{13}$/.test(doc.reg)) add('INVALID_T_NUMBER_FORMAT', '登録番号が T＋13桁の形式ではありません: ' + (doc.reg || '(未記載)'));
+    else {
+      var corp = /(?:株式会社|有限会社|合同会社|\(株\)|\(有\)|\(同\))/.test(nz(doc.vendorName || ''));
+      var ok = corpOk(doc.reg.slice(1));
+      if (corp && !ok) add('CORP_T_NUMBER_CHECKDIGIT_FAIL', '法人の登録番号 ' + doc.reg + ' が検査数字（モジュラス9）の検算に合いません。1桁の誤記の疑い。');
+      else if (!corp && !ok) advisories.push({ code: 'SOLE_PROP_NEEDS_NTA_REGISTRY_LOOKUP' });
+    }
+    var s10 = 0, s8 = 0;
+    doc.lines.forEach(function (l, i) {
+      if (l.qty * l.unitPrice !== l.amount) add('LINE_MATH_MISMATCH', (i + 1) + '行目「' + l.name + '」: ' + l.qty + ' × ' + l.unitPrice + ' = ' + (l.qty * l.unitPrice) + ' ≠ 記載 ' + l.amount, { lossRiskYen: Math.abs(l.amount - l.qty * l.unitPrice) });
+      var exp = hist[l.name];
+      if (exp && l.unitPrice > 0) {
+        var ratio = l.unitPrice / exp;
+        if (ratio >= 8 || ratio <= 0.125) add('DIGIT_SHIFT_10X', (i + 1) + '行目「' + l.name + '」: 単価 ' + l.unitPrice + ' は過去実績 ' + exp + ' の ' + Number(ratio.toFixed(3)) + ' 倍（桁ズレの疑い）', { lossRiskYen: Math.abs(l.unitPrice - exp) * l.qty });
+      }
+      if (l.isReduced8) s8 += l.amount; else s10 += l.amount;
+    });
+    var t10 = Math.floor(s10 * 0.1), t8 = Math.floor(s8 * 0.08), grand = s10 + s8 + t10 + t8;
+    if (doc.st10 !== null && doc.st10 !== t10) add('TAX_SINGLE_ROUNDING_MISMATCH', '10%対象の消費税 記載 ' + doc.st10 + ' ≠ 税率ごと1回端数処理 ' + t10);
+    if (doc.st8 !== null && doc.st8 !== t8) add('TAX_SINGLE_ROUNDING_MISMATCH', '8%対象の消費税 記載 ' + doc.st8 + ' ≠ 税率ごと1回端数処理 ' + t8);
+    if (doc.total === null) add('TOTAL_MISMATCH', '合計金額が読み取れません。');
+    else if (doc.total !== grand) add('TOTAL_MISMATCH', '合計 記載 ' + doc.total + ' ≠ 再計算 ' + grand + '（差 ' + (doc.total - grand) + '）');
+    if (doc.lines.length === 0) add('NO_LINES', '明細行を1行も読み取れませんでした。');
+    var loss = defects.reduce(function (a, d) { return a + (d.lossRiskYen || 0); }, 0);
+    return {
+      overallVerdict: defects.length ? 'STOPPED_DEFECT' : 'PASS', defects: defects, advisories: advisories, lossRiskYen: loss,
+      totals: { subtotal10: s10, subtotal8: s8, tax10: t10, tax8: t8, grandTotal: grand }, document: { statedTotal: doc.total }
+    };
+  }
+  var VERDICT = { PASS: '合格（検算の範囲では異常なし）', STOPPED_DEFECT: '欠陥を検知したため自動停止', CANNOT_JUDGE: '判定不能（通信不通のため停止・合格とは扱いません）' };
+  function render(r, where) {
+    var t = r.totals || {}, stop = r.overallVerdict !== 'PASS';
+    var defects = (r.defects || []).map(function (d) {
+      var c = CAT[d.code] || { label: '検査項目に不一致', next: '原本と照合してください。' };
+      return '<li><b>' + esc(c.label) + '</b><br>' + esc(d.message || '') + (d.lossRiskYen ? ' <small>損失リスク ' + yen(d.lossRiskYen) + '</small>' : '') + '<br><small>次の手: ' + esc(c.next) + '</small></li>';
+    }).join('');
+    var adv = (r.advisories || []).map(function () { return '<li>個人事業主とみられる登録番号です。実在・失効は国税庁の公表サイトで確認してください。</li>'; }).join('');
+    var stated = r.document && r.document.statedTotal != null ? yen(r.document.statedTotal) : '—';
+    $('result').innerHTML =
+      '<p><span class="verdict' + (stop ? ' stop' : '') + '">' + esc(VERDICT[r.overallVerdict] || '判定不能') + '</span></p>' +
+      '<table><tr><th>10%対象小計</th><td class="num">' + yen(t.subtotal10 || 0) + '</td></tr><tr><th>8%対象小計</th><td class="num">' + yen(t.subtotal8 || 0) + '</td></tr>' +
+      '<tr><th>消費税（税率ごと1回端数処理）</th><td class="num">' + yen((t.tax10 || 0) + (t.tax8 || 0)) + '</td></tr><tr><th>再計算合計</th><td class="num">' + yen(t.grandTotal || 0) + '</td></tr><tr><th>記載合計</th><td class="num">' + stated + '</td></tr></table>' +
+      (defects ? '<ul>' + defects + '</ul>' : '<p>検算の範囲では欠陥は見つかりませんでした。</p>') + (adv ? '<ul>' + adv + '</ul>' : '') +
+      (r.lossRiskYen ? '<p>このまま振り込むと、最大 <b>' + yen(r.lossRiskYen) + '</b> の過払いリスクがあります。</p>' : '') +
+      '<p><small>' + esc(where) + '</small></p>';
+  }
+  document.querySelectorAll('[data-preset]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = PRE[b.getAttribute('data-preset')];
+      $('doc').value = p.text; $('hist').value = p.history || '';
+    });
+  });
+  $('audit-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var text = $('doc').value, hist = parseHistory($('hist').value);
+    if (!text.trim()) { $('result').innerHTML = '<p>請求書の文字列が空です。PDFからコピーした明細、またはTSVを貼り付けてください。</p>'; return; }
+    if (LIVE) {
+      try {
+        var res = await fetch('/api/audit', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ input: text, mode: 'deterministic_only', commit: false, vendorHistory: hist }) });
+        var j = await res.json();
+        if (res.ok && j.ok) { render(j, 'サーバー側の検査エンジンで検算しました（登録・保存はしていません）。'); return; }
+      } catch (err) { /* ブラウザ内検算へ切り替え */ }
+    }
+    render(localAudit(text, hist), 'このブラウザ内で検算しました（入力内容はどこにも送信されません。二重計上の照合は行いません）。');
+  });
+})();
+</script>
+</body>
+</html>

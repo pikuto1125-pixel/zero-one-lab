@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>InvoiceGuard PreFlight — 買掛請求書の「単価10倍桁ズレ・過払い」防止ゲート見本</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+      --ink: #0F172A;
+      --sub: #334155;
+      --line: #CBD5E1;
+      --accent: #1E3A8A;
+      --ok-fg: #065F46;
+      --ok-bg: #ECFDF5;
+      --ng-fg: #9F1239;
+      --ng-bg: #FFF1F2;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--ink);
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+      font-size: 16px; line-height: 1.65; overflow-x: hidden;
+    }
+    a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 28px 20px 56px 20px; }
+    .head {
+      background: var(--card); border: 2px solid var(--accent); border-radius: 8px;
+      padding: 20px 22px; margin-bottom: 24px;
+    }
+    .head h1 { font-size: 24px; margin: 0 0 10px 0; color: var(--ink); line-height: 1.35; }
+    .lead { font-size: 15px; margin: 0 0 12px 0; color: var(--ink); font-weight: 600; }
+    .io-list { margin: 0 0 10px 0; padding-left: 20px; font-size: 14px; color: var(--sub); }
+    .disclosure {
+      margin: 0; padding: 8px 12px; background: #F1F5F9; border-left: 4px solid var(--accent);
+      font-size: 13px; color: var(--ink);
+    }
+    h2 { font-size: 18px; margin: 28px 0 12px 0; color: var(--ink); border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 20px; margin-bottom: 24px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+    .panel h3 { font-size: 16px; margin: 0 0 10px 0; color: var(--ink); }
+    .badge-ok { display: inline-block; padding: 3px 10px; border-radius: 4px; background: var(--ok-bg); color: var(--ok-fg); font-size: 13px; font-weight: 700; }
+    .badge-ng { display: inline-block; padding: 3px 10px; border-radius: 4px; background: var(--ng-bg); color: var(--ng-fg); font-size: 13px; font-weight: 700; }
+    .sample-img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 10px 0; }
+    .caption { font-size: 13px; color: var(--sub); margin: 6px 0 0 0; }
+    .pre-box {
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      background: #F1F5F9; border: 1px solid var(--line); border-radius: 6px;
+      padding: 12px; font-size: 13px; color: var(--ink); margin-top: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; background: var(--card); margin-bottom: 20px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; font-size: 13px; text-align: left; overflow-wrap: anywhere; }
+    th { background: #F1F5F9; color: var(--ink); font-weight: 700; }
+    .boundary {
+      background: #FFFBEB; border: 1px solid #D97706; border-radius: 8px;
+      padding: 16px 20px; margin-bottom: 24px; font-size: 14px; color: #78350F;
+    }
+    .boundary h2 { font-size: 16px; margin: 0 0 8px 0; color: #78350F; border-bottom: none; padding-bottom: 0; }
+    .boundary p { margin: 0 0 8px 0; }
+    
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+    @media print { .inquiry-section { display: none; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="head" id="top-spec">
+      <h1>InvoiceGuard PreFlight — 買掛請求書の「単価10倍桁ズレ・過払い」防止ゲート見本</h1>
+      <p class="lead">請求書PDF等からコピーした明細テキスト・TSVを貼ると、過去単価との10倍ズレ・税率別の端数ミス・二重払いを振込前に判定し、問題のない請求書だけ freee / マネーフォワード用CSVにします。</p>
+      <ul class="io-list">
+        <li><strong>入力（入れるもの）:</strong> 請求書PDF等からのコピー文字列・TSV（全角数字・令和表記・値引き行に対応）。過去単価の一覧があれば桁ズレの比較も行います。</li>
+        <li><strong>出力（出てくるもの）:</strong> 合否判定（合格／欠陥検知により自動停止／通信不通のため判定停止）、過払いリスク金額の試算、合格時のみ出力される会計取込CSV</li>
+      </ul>
+      <p class="disclosure">このファイルは提案添付・事前確認用のスタンドアロン出力見本HTMLです（例示データを実際の検品プログラムに通した出力であり、顧客実績ではありません）。実データ1件での無料サンプル検品をご希望の場合は、ページ下部のご相談フォームから依頼文を作成できます。</p>
+    </header>
+
+    <section>
+      <h2>例示データを検品ツールに通した出力見本</h2>
+      
+          <div class="grid-2">
+            <div class="panel">
+              <h3>【例示帳票A】計算・法人番号が一致するサンプルの検査結果</h3>
+              <span class="badge-ok">判定 合格（検算の範囲では異常なし）（税率別端数・MOD9一致）</span>
+              <p class="caption">※合成例示データ（株式会社サンプル商事・架空有効番号）の検査結果（測定日: 2026-11-12 / n=2件中1件目）</p>
+              <div class="pre-box">10%対象税抜: 384,000円 ＋ 消費税10%: 38,400円
+軽減8%対象税抜（弁当 ※軽減）: 10,000円 ＋ 消費税8%: 800円
+消費税合計: 39,200円 ／ 税込合計: 433,200円（1円単位完全一致）</div>
+            </div>
+            <div class="panel">
+              <h3>【例示帳票B】単価10倍桁ズレが混入したサンプルの停止結果</h3>
+              <span class="badge-ng">判定 欠陥を検知したため自動停止（検知内容: 過去単価からの10倍桁ズレの疑い）</span>
+              <p class="caption">※単価 128,000円→1,280,000円（数量3台）の誤入力例を検査した結果（測定日: 2026-11-12 / n=2件中2件目）</p>
+              <div class="pre-box">10%対象税抜: 3,840,000円 ＋ 消費税10%: 384,000円
+軽減8%対象税抜（弁当 ※軽減）: 10,000円 ＋ 消費税8%: 800円
+税込合計: 4,234,800円
+検知理由: 過去単価 128,000円の10倍（税抜差額 3,456,000円の過払いリスクで自動停止・CSV出力ロック）</div>
+            </div>
+          </div>
+        
+    </section>
+
+    <section class="boundary">
+      <h2>未対応・手動確認が必要な範囲 ＆ 停止したときの次の手</h2>
+      <p><strong>人間による最終確認が必要な範囲:</strong> 本ツールは外税（税抜明細＋税率別消費税）帳票の算術整合性・法人番号MOD9・同一DB内重複を検査します。個人事業主の登録番号（法人番号と体系が異なる番号）の実在確認や登録失効日の照会は国税庁公表サイトでの確認が必要であり、契約上の検収有無や最終支払承認は経理責任者の確認が必要です。</p>
+      <p><strong>入力不備・判定不能のとき:</strong> 欠陥を検知したときは会計CSVを出力せず自動停止します（理由を明記した明示的な解除操作を除く）。AI検品モードで通信できないときは黙って合格にせず「判定不能（通信不通のため停止）」と表示して止まります。</p>
+    </section>
+
+    <section>
+      <h2>検証条件・測定証跡（再現条件とサンプル件数）</h2>
+      <table>
+        <thead>
+          <tr><th>項目・指標</th><th>本見本での実測値</th><th>測定日・環境・条件・件数 (n)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>汚れデータ3種＋欠陥注入テスト通過数</td><td>10 / 10 テストケース通過</td><td>測定日: 2026-11-12 / 環境: Node.js v24.14.0 手元PCでのローカル実行 / 請求書検品の全自動テスト全10件実測通過</td></tr>
+<tr><td>例示2帳票の決定論検査処理時間</td><td>2 ms（2件合計）</td><td>測定日: 2026-11-12 / 環境: Node.js v24.14.0 手元PCでのローカル実行 / メモリ上の一時台帳モード n=2 実測値</td></tr>
+<tr><td>例示帳票Bで検知した税抜単価差額</td><td>3,456,000 円</td><td>計算根拠: (誤単価 1,280,000円 - 過去単価 128,000円) × 3台 = 3,456,000円（例示データ試算）</td></tr>
+        </tbody>
+      </table>
+      <p class="caption">通信先: 算術・適格番号・二重計上検査＝ローカル完結（外部送信なし）／意味論検品＝Google Gemini Decisions API Paid Tier（学習利用なし）</p>
+    </section>
+
+    
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">個別検品パック・専用カスタマイズのご相談フォーム</h2>
+      <p class="inquiry-lead">「手元のデータ1件で無料見本を作ってほしい」「自社の帳票・制作フローに合わせて導入したい」という場合は、下のフォームから送信（または依頼文をコピーしてメッセージ欄へ貼り付け）してください。決済情報の入力は不要です。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="実データ1件での無料検品サンプル作成希望">実データ1件での無料検品サンプル作成希望</option><option value="単発の検品パック依頼（画像・スライド等）">単発の検品パック依頼（画像・スライド等）</option><option value="自社仕様へのカスタマイズ・導入見積り相談">自社仕様へのカスタマイズ・導入見積り相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: お手元のデータ3〜5件について、公開・振込前の無料サンプル検品を希望します。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#top-spec" class="inquiry-alt-link">上の見本に戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "InvoiceGuard PreFlight" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+  </main>
+</body>
+</html>

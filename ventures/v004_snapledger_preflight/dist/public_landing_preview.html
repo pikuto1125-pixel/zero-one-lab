@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SnapLedger PreFlight（証憑プリフライト検疫デスク）— 請求書・領収書を会計ソフトに入れる前の適格要件・税額・二重計上チェック</title>
+  <meta name="description" content="請求書・領収書からコピーしたテキストで、適格請求書6要件、登録番号の検算、10%・軽減8%の1円単位の税額一致、重複計上の警告をローカルで検査し、合格分だけfreee / マネーフォワード互換の仕訳CSVに変換します。画像はピンボケ・暗潰れの画質チェック専用で、文字の自動読み取り（OCR）は行いません。" />
+  <style>
+    :root {
+      --paper: #FBFAF6;
+      --card: #FFFFFF;
+      --ink: #1B2430;
+      --ink-soft: #3B4654;
+      --line: #CFCABB;
+      --head: #0B3D2E;
+      --head-ink: #F4F1E8;
+      --green: #0B5D43;
+      --green-soft: #E4F3EC;
+      --amber: #E0A100;
+      --amber-ink: #6E4300;
+      --amber-soft: #FFF2D2;
+      --red: #9B1C3A;
+      --red-soft: #FCE9ED;
+      --th: #E9E5D8;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+      outline: 3px solid var(--amber);
+      outline-offset: 2px;
+    }
+
+    .desk-header { background: var(--head); color: var(--head-ink); border-bottom: 4px solid var(--amber); }
+    .desk-header-inner { max-width: 1120px; margin: 0 auto; padding: 12px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-mark { width: 14px; height: 14px; background: var(--amber); flex: none; }
+    .brand-name { font-size: 18px; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; }
+    .nav { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+    .nav-link { color: var(--head-ink); font-size: 14px; line-height: 1.6; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 56px; }
+    .kicker { display: inline-block; background: var(--head); color: var(--head-ink); font-size: 14px; line-height: 1.6; font-weight: 700; padding: 0 12px; margin: 0 0 10px; }
+    .hero-h1 { font-size: 32px; line-height: 1.3; font-weight: 800; margin: 0 0 12px; overflow-wrap: anywhere; }
+    .lead { font-size: 16px; line-height: 1.7; font-weight: 400; color: var(--ink-soft); max-width: 820px; margin: 0 0 18px; overflow-wrap: anywhere; }
+
+    .io-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px; margin: 0 0 14px; }
+    .io-card { background: var(--card); border: 1px solid var(--line); border-top: 5px solid var(--green); padding: 14px 16px; min-width: 0; }
+    .io-card-out { border-top-color: var(--amber); }
+    .io-card-net { border-top-color: var(--ink); }
+    .card-h3 { font-size: 18px; line-height: 1.4; font-weight: 700; margin: 0 0 8px; overflow-wrap: anywhere; }
+    .note { font-size: 14px; line-height: 1.6; font-weight: 400; color: var(--ink-soft); margin: 0 0 10px; overflow-wrap: anywhere; }
+    .list { margin: 0; padding-left: 20px; }
+    .list-item { font-size: 14px; line-height: 1.6; font-weight: 400; color: var(--ink); margin: 0 0 4px; overflow-wrap: anywhere; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 6px; }
+
+    .section { margin: 0 0 40px; }
+    .section-h2 { font-size: 24px; line-height: 1.3; font-weight: 800; margin: 0 0 12px; padding-left: 12px; border-left: 6px solid var(--amber); overflow-wrap: anywhere; }
+    .banner { font-size: 14px; line-height: 1.6; font-weight: 700; color: var(--amber-ink); background: var(--amber-soft); border: 2px solid var(--amber); padding: 10px 14px; margin: 0 0 10px; overflow-wrap: anywhere; }
+    .evidence { font-size: 14px; line-height: 1.6; font-weight: 400; color: var(--ink-soft); margin: 0 0 16px; overflow-wrap: anywhere; }
+
+    .compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 18px; }
+    .sample-card { background: var(--card); border: 1px solid var(--line); padding: 16px; min-width: 0; }
+    .sample-good { border-top: 5px solid var(--green); }
+    .sample-bad { border-top: 5px solid var(--red); }
+    .sample-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 10px; }
+    .sample-line .card-h3 { margin: 0; }
+
+    .tag { display: inline-block; font-size: 14px; line-height: 1.6; font-weight: 700; padding: 0 10px; border: 1px solid currentColor; border-radius: 3px; }
+    .verdict-pass { color: var(--green); background: var(--green-soft); }
+    .verdict-warn { color: var(--amber-ink); background: var(--amber-soft); }
+    .verdict-fail { color: var(--red); background: var(--red-soft); }
+
+    .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); margin: 0 0 14px; }
+    .data-table { width: 100%; min-width: 520px; border-collapse: collapse; text-align: left; }
+    .table-cap { font-size: 14px; line-height: 1.6; font-weight: 400; color: var(--ink-soft); text-align: left; padding: 8px 10px; }
+    .data-table th { font-size: 14px; line-height: 1.6; font-weight: 700; color: var(--ink); background: var(--th); padding: 6px 10px; border-bottom: 2px solid var(--line); overflow-wrap: anywhere; }
+    .data-table td { font-size: 14px; line-height: 1.6; font-weight: 400; color: var(--ink); padding: 6px 10px; border-bottom: 1px solid #E3DFD2; vertical-align: top; overflow-wrap: anywhere; }
+    .code { font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace; font-size: 14px; line-height: 1.6; font-weight: 400; overflow-wrap: anywhere; }
+    .csv { font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace; font-size: 14px; line-height: 1.6; color: var(--ink); background: #F1EEE3; border: 1px solid var(--line); padding: 10px 12px; margin: 0 0 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .link { color: var(--green); font-size: 14px; line-height: 1.6; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+
+    .panel { background: var(--card); border: 1px solid var(--line); padding: 16px; min-width: 0; margin: 0 0 14px; }
+    .field-label { display: block; font-size: 14px; font-weight: 700; color: var(--ink); margin: 0 0 6px; }
+    .field-control { display: block; width: 100%; max-width: 100%; padding: 9px 10px; border: 1px solid #5B6572; border-radius: 4px; background: #FFFFFF; color: var(--ink); font-size: 14px; line-height: 1.6; font-family: inherit; margin: 0 0 12px; }
+    .field-text { min-height: 190px; font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace; }
+    .btn { display: inline-block; max-width: 100%; padding: 10px 16px; border: 2px solid var(--head); border-radius: 4px; font-size: 14px; line-height: 1.6; font-family: inherit; font-weight: 700; cursor: pointer; background: var(--head); color: #FFFFFF; text-align: center; overflow-wrap: anywhere; }
+    .btn-sub { background: #FFFFFF; color: var(--head); }
+    .btn:disabled { opacity: 0.7; cursor: wait; }
+    .try-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+    .result-card { background: var(--card); border: 1px solid var(--line); border-top: 5px solid var(--ink); padding: 14px 16px; min-width: 0; }
+    .result-empty { font-size: 14px; line-height: 1.6; font-weight: 400; color: var(--ink-soft); margin: 0; overflow-wrap: anywhere; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; margin: 0 0 14px; }
+    .stat-card { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--green); padding: 10px 14px; min-width: 0; }
+    .stat-val { display: block; font-size: 24px; line-height: 1.3; font-weight: 800; color: var(--ink); }
+
+    .cta-footer { background: var(--head); color: var(--head-ink); border-top: 4px solid var(--amber); padding: 28px 22px; margin-top: 12px; }
+    .cta-h2 { font-size: 24px; line-height: 1.3; font-weight: 800; color: var(--head-ink); margin: 0 0 10px; overflow-wrap: anywhere; }
+    .cta-p { font-size: 16px; line-height: 1.7; font-weight: 400; color: #E7E3D6; max-width: 780px; margin: 0 0 16px; overflow-wrap: anywhere; }
+    .cta-btn { display: inline-block; max-width: 100%; background: var(--amber); color: #1B2430; font-size: 14px; line-height: 1.6; font-weight: 700; text-decoration: none; padding: 10px 20px; border-radius: 4px; overflow-wrap: anywhere; }
+
+    [hidden] { display: none !important; }
+    .adv { margin: 0 0 12px; border: 1px solid var(--line); background: #FBFAF6; padding: 8px 12px; }
+    .adv-sum { font-size: 14px; line-height: 1.6; font-weight: 700; color: var(--head); cursor: pointer; }
+    .adv[open] .adv-sum { margin-bottom: 8px; }
+    .inquiry-section { max-width: 100%; }
+
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+    @media (max-width: 600px) {
+      .hero-h1 { font-size: 26px; }
+      .wrap { padding: 20px 14px 40px; }
+      .panel, .sample-card, .result-card { padding: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+    }
+    @media print {
+      html, body { background: #FFFFFF; }
+      .desk-header, .cta-footer, .try-panel, .btn { display: none; }
+      .sample-card, .table-wrap, .result-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="desk-header">
+    <div class="desk-header-inner">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">SnapLedger PreFlight（証憑プリフライト検疫デスク）</span></div>
+      <nav class="nav" aria-label="ページ内移動">
+        <a class="nav-link" href="#sample">検疫出力見本</a>
+        <a class="nav-link" href="#bench">ライブ試運転</a>
+        <a class="nav-link" href="#limits">未対応範囲</a>
+        <a class="nav-link" href="#pricing">料金・検証条件</a>
+        <a class="nav-link" href="#history">履歴</a>
+        <a class="nav-link" href="#inquiry-form">導入相談</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="kicker">経費領収書・請求書の「インボイス6要件＆仕訳CSV」検疫デスク</p>
+      <h1 class="hero-h1" id="hero-title">請求書・領収書を会計ソフトに入れる前に、適格要件・税額・二重計上を1円単位で検疫する</h1>
+      <p class="lead">請求書・領収書からコピーした文字列を貼ると、適格請求書の6要件・登録番号の検査用数字（MOD9）・10%と軽減8%の税額の一致・同じ証憑の二重計上をその場で判定し、合格分だけを freee / マネーフォワード互換の仕訳CSVにして返します。スマホ撮影のレシート画像も添付できますが、※画像はピンボケ・暗潰れの画質チェック専用であり、文字の自動読み取り（OCR）は行いません。金額や登録番号の検算には請求書PDF等からコピーしたテキストを貼り付けてください。</p>
+      <div class="cta-row">
+        <a class="btn" href="#bench">貼り付けて試運転する</a>
+        <a class="btn btn-sub" href="#sample">検疫出力見本を見る</a>
+      </div>
+
+      <div class="io-grid">
+        <div class="io-card">
+          <h2 class="card-h3">【入力するもの】</h2>
+          <ul class="list">
+            <li class="list-item">請求書・領収書からコピーした文字列（PDFや画面からコピー＆ペースト）</li>
+            <li class="list-item">システム連携用の構造化データ（JSON・上級者向け）</li>
+            <li class="list-item">スマホ撮影レシート画像（PNG / JPEG）…ピンボケ・暗潰れの画質チェック専用。文字の自動読み取り（OCR）は行いません</li>
+          </ul>
+        </div>
+        <div class="io-card io-card-out">
+          <h2 class="card-h3">【出力されるもの】</h2>
+          <ul class="list">
+            <li class="list-item">国税庁 適格請求書 6要件の判定と、登録番号の検査用数字（MOD9）の照合</li>
+            <li class="list-item">10%・軽減8% の1円単位の税額一致判定</li>
+            <li class="list-item">同じ証憑の二重計上の警告（SHA-256 指紋で照合）</li>
+            <li class="list-item">合格・警告の証憑だけを freee / マネーフォワード互換の仕訳CSVに変換（差し戻し分は誤計上防止のため既定で除外）</li>
+          </ul>
+        </div>
+        <div class="io-card io-card-net">
+          <h2 class="card-h3">【通信先の開示】</h2>
+          <p class="note">通信先: 適格要件・MOD9検算・税額算術・重複ハッシュ・画像鮮鋭度検査＝ローカル完結（外部送信なし）／品目曖昧さの意味論判定（任意キー設定時のみ）＝Google Gemini Paid API（学習利用なし）</p>
+          <p class="note">この画面のサーバーは、任意キー 未設定（外部送信は一切行いません）。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sample" aria-labelledby="sample-title">
+      <h2 class="section-h2" id="sample-title">検疫出力見本：検疫通過サンプルは通過、差し戻しサンプルは停止</h2>
+      <p class="banner">【例示データの検疫出力見本】内蔵サンプル証憑を本エンジンに通した実出力（実在事業者の取引ではありません）</p>
+      <p class="evidence">[証跡: 2026-11-14 ／ 内蔵サンプル証憑 n=3 ／ 測定条件の詳細はページ下部「料金と検証条件・技術仕様」に記載] ／ 検査エンジン v0.1.0・決定論ルールのみ（外部通信なし）。下表はページ生成時に実行した結果です。</p>
+
+      <div class="compare-grid">
+        <article class="sample-card sample-good">
+          <div class="sample-line"><h3 class="card-h3">検疫通過サンプル（適格要件・税額一致）</h3><span class="tag verdict-pass">通過</span></div>
+          <p class="note">発行者: 株式会社サンプル商事 ／ 登録番号: T6700012345678（検査用数字 一致） ／ 発行日: 2026-11-12</p>
+          <div class="table-wrap"><table class="data-table">
+      <caption class="table-cap">適格請求書 6要件の照合（登録番号は T＋13桁の検査用数字＝MOD9 を算式で照合）</caption>
+      <thead><tr><th scope="col">要件</th><th scope="col">項目</th><th scope="col">結果</th><th scope="col">読み取った内容</th></tr></thead>
+      <tbody><tr>
+          <td>要件1</td>
+          <td>発行事業者名</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>株式会社サンプル商事</td>
+        </tr><tr>
+          <td>要件2</td>
+          <td>有効な登録番号（T+13桁・検査用数字）</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>T6700012345678（検査用数字 一致）</td>
+        </tr><tr>
+          <td>要件3</td>
+          <td>取引年月日（実在日付）</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>2026-11-12</td>
+        </tr><tr>
+          <td>要件4</td>
+          <td>取引内容（軽減税率対象は明記）</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>コピー用紙 A4 および ※お茶代（軽減税率対象）</td>
+        </tr><tr>
+          <td>要件5</td>
+          <td>税率ごとの対価の額・適用税率・消費税額</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>10%: 対象 10,000円 / 税 1,000円 ／ 8%: 対象 2,000円 / 税 160円</td>
+        </tr><tr>
+          <td>要件6</td>
+          <td>交付を受ける事業者名</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>株式会社デモ工房</td>
+        </tr></tbody></table></div>
+          <div class="table-wrap"><table class="data-table">
+      <caption class="table-cap">税額の算術照合（1円単位。端数処理は切捨・四捨五入・切上のいずれかで説明できれば一致）</caption>
+      <thead><tr><th scope="col">区分</th><th scope="col">対象額 / 基準</th><th scope="col">消費税 / 記載</th><th scope="col">理論値 / 差</th><th scope="col">判定</th></tr></thead>
+      <tbody><tr>
+          <td>10%対象（税抜）</td>
+          <td>10,000円</td>
+          <td>1,000円</td>
+          <td>1,000円</td>
+          <td><span class="tag verdict-pass">一致</span></td>
+        </tr><tr>
+          <td>軽減8%対象※（税抜）</td>
+          <td>2,000円</td>
+          <td>160円</td>
+          <td>160円</td>
+          <td><span class="tag verdict-pass">一致</span></td>
+        </tr><tr>
+          <td>税込合計</td>
+          <td>理論値 13,160円</td>
+          <td>記載 13,160円</td>
+          <td>差 0円</td>
+          <td><span class="tag verdict-pass">一致</span></td>
+        </tr></tbody></table></div>
+          <p class="note">10%対象 10,000円 → 税 1,000円 ／ 軽減8%対象（※明記）2,000円 → 税 160円 ／ 税込合計 13,160円（税抜 12,000円 ＋ 税 1,160円）。指摘 0 件。</p>
+        </article>
+
+        <article class="sample-card sample-bad">
+          <div class="sample-line"><h3 class="card-h3">差し戻し停止サンプル（番号誤り・税率違い）</h3><span class="tag verdict-fail">差し戻し（停止）</span></div>
+          <p class="note">発行者: テスト物販株式会社 ／ 記載の登録番号: T4800012345679（先頭の検査用数字 4・算出値 3）。エラー 3 件・警告 1 件で停止します。</p>
+          <div class="table-wrap"><table class="data-table">
+      <caption class="table-cap">適格請求書 6要件の照合（登録番号は T＋13桁の検査用数字＝MOD9 を算式で照合）</caption>
+      <thead><tr><th scope="col">要件</th><th scope="col">項目</th><th scope="col">結果</th><th scope="col">読み取った内容</th></tr></thead>
+      <tbody><tr>
+          <td>要件1</td>
+          <td>発行事業者名</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>テスト物販株式会社</td>
+        </tr><tr>
+          <td>要件2</td>
+          <td>有効な登録番号（T+13桁・検査用数字）</td>
+          <td><span class="tag verdict-fail">NG</span></td>
+          <td>法人の登録番号の検査用数字が不一致</td>
+        </tr><tr>
+          <td>要件3</td>
+          <td>取引年月日（実在日付）</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>2026-11-12</td>
+        </tr><tr>
+          <td>要件4</td>
+          <td>取引内容（軽減税率対象は明記）</td>
+          <td><span class="tag verdict-fail">NG</span></td>
+          <td>軽減税率対象の表記なし</td>
+        </tr><tr>
+          <td>要件5</td>
+          <td>税率ごとの対価の額・適用税率・消費税額</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>10%: 対象 10,000円 / 税 1,000円 ／ 8%: 対象 1,800円 / 税 180円</td>
+        </tr><tr>
+          <td>要件6</td>
+          <td>交付を受ける事業者名</td>
+          <td><span class="tag verdict-pass">OK</span></td>
+          <td>株式会社デモ工房</td>
+        </tr></tbody></table></div>
+          <div class="table-wrap"><table class="data-table">
+      <caption class="table-cap">税額の算術照合（1円単位。端数処理は切捨・四捨五入・切上のいずれかで説明できれば一致）</caption>
+      <thead><tr><th scope="col">区分</th><th scope="col">対象額 / 基準</th><th scope="col">消費税 / 記載</th><th scope="col">理論値 / 差</th><th scope="col">判定</th></tr></thead>
+      <tbody><tr>
+          <td>10%対象（税抜）</td>
+          <td>10,000円</td>
+          <td>1,000円</td>
+          <td>1,000円</td>
+          <td><span class="tag verdict-pass">一致</span></td>
+        </tr><tr>
+          <td>軽減8%対象※（税抜）</td>
+          <td>1,800円</td>
+          <td>180円</td>
+          <td>144円</td>
+          <td><span class="tag verdict-fail">不一致</span></td>
+        </tr><tr>
+          <td>税込合計</td>
+          <td>理論値 12,944円</td>
+          <td>記載 12,980円</td>
+          <td>差 +36円</td>
+          <td><span class="tag verdict-fail">不一致</span></td>
+        </tr></tbody></table></div>
+          <div class="table-wrap"><table class="data-table">
+      <caption class="table-cap">指摘事項と、止まった時の次の手</caption>
+      <thead><tr><th scope="col">指摘</th><th scope="col">重大度</th><th scope="col">内容</th><th scope="col">次の手</th></tr></thead>
+      <tbody><tr>
+          <td><b>法人の登録番号の検査用数字が不一致</b></td>
+          <td><span class="tag verdict-fail">エラー（停止）</span></td>
+          <td>要件2 有効な登録番号（T+13桁・検査用数字）: 法人の登録番号の検査用数字が不一致</td>
+          <td>転記ミスの可能性があります。原本と照合し、国税庁の公表サイトで登録の実在を確認してください</td>
+        </tr><tr>
+          <td><b>軽減税率の表記なし</b></td>
+          <td><span class="tag verdict-fail">エラー（停止）</span></td>
+          <td>要件4 取引内容（軽減税率対象は明記）: 軽減税率の表記なし</td>
+          <td>軽減税率対象の品目に「※」等の表記があるか原本を確認し、なければ発行元に再発行を依頼してください</td>
+        </tr><tr>
+          <td><b>軽減8%の品目を10%で計算している疑い</b></td>
+          <td><span class="tag verdict-fail">エラー（停止）</span></td>
+          <td>軽減8%対象 1,800円 の消費税が 10% で計算されています（記載 180円 / 8% なら 144円）</td>
+          <td>税率区分の取り違えです。発行元に訂正済み請求書を依頼してください</td>
+        </tr><tr>
+          <td><b>取引内容が曖昧（「お品代」等）</b></td>
+          <td><span class="tag verdict-warn">警告</span></td>
+          <td>取引内容「お品代として」だけでは品名・役務の内容が特定できません</td>
+          <td>品名・役務の内容が分かる再発行、または取引メモの補記を検討してください（判断は経理担当・税理士）</td>
+        </tr></tbody></table></div>
+        </article>
+      </div>
+
+      <h3 class="card-h3">二重計上の警告（SHA-256 指紋）</h3>
+      <p class="note">検疫通過サンプルと「日付・発行者（株式会社/（株）の表記ゆれを正規化）・税込金額」が同じ証憑を続けて通した結果です。指紋 <code class="code">14afd46d4107f387895d60b9c3101dc29793cb4bba000b207f43f47a92c6bff4</code> が先に通した証憑と一致するため <span class="tag verdict-fail">差し戻し（停止）</span> になります（別取引で同額の場合は、確認のうえ計上して構いません）。</p>
+
+      <h3 class="card-h3">仕訳CSVの出力見本（検疫を通過した証憑のみ）</h3>
+      <p class="note">※不備で停止（差し戻し）した証憑は、誤計上防止のため既定では仕訳CSVから自動除外されます（要確認フラグ付きで出力するオプションも選択できます）。上の差し戻しサンプルは、下のCSVに含まれていません。</p>
+      <p class="note">列名・税区分名は作成時点の想定仕様です。取込前に freee / マネーフォワード クラウド会計の最新のインポート仕様を確認してください。</p>
+      <p class="note"><b>freee 形式</b></p>
+      <pre class="csv">収支区分,管理番号,発生日,決済期日,取引先,勘定科目,税区分,金額,税計算区分,税額,備考,品目,部門,メモタグ（複数指定可、カンマ区切り）,決済日,決済口座,決済金額
+支出,DEMO-0001,2026-11-12,,株式会社サンプル商事,仮払金,課対仕入10%,11000,内税,1000,,コピー用紙 A4 および ※お茶代（軽減税率対象）,,,,,
+支出,DEMO-0001,2026-11-12,,株式会社サンプル商事,仮払金,課対仕入(軽)8%,2160,内税,160,,コピー用紙 A4 および ※お茶代（軽減税率対象）,,,,,
+</pre>
+      <p class="note"><b>マネーフォワード形式</b></p>
+      <pre class="csv">取引No,取引日,借方勘定科目,借方補助科目,借方部門,借方取引先,借方税区分,借方インボイス,借方金額(円),借方税額,貸方勘定科目,貸方補助科目,貸方部門,貸方取引先,貸方税区分,貸方インボイス,貸方金額(円),貸方税額,摘要,仕訳メモ,タグ
+1,2026/11/12,仮払金,,,株式会社サンプル商事,課対仕入10%,,11000,1000,未払金,,,,対象外,,11000,,コピー用紙 A4 および ※お茶代（軽減税率対象）,,
+1,2026/11/12,仮払金,,,株式会社サンプル商事,課対仕入(軽)8%,,2160,160,未払金,,,,対象外,,2160,,コピー用紙 A4 および ※お茶代（軽減税率対象）,,
+</pre>
+    </section>
+
+    <section class="section try-panel" id="bench" aria-labelledby="bench-title">
+      <h2 class="section-h2" id="bench-title">ライブ試運転：貼り付けて検疫する</h2>
+      <p class="note">本日（日本時間）の残り枠: 30 / 30 件。貼り付けたテキストは、このサーバー内でローカル判定します。履歴と重複指紋はこのサーバーに記録されます。実在の請求書を貼る場合は、取引先・金額が履歴に残る点にご注意ください。</p>
+      <div class="try-grid">
+        <form class="panel" id="form-inspect">
+          <h3 class="card-h3">証憑を入力</h3>
+          <p class="note">見本ボタン（押すと貼り付け欄に入ります）</p>
+          <div class="cta-row">
+            <button type="button" class="btn btn-sub" data-preset="good">検疫通過サンプルを入れる</button>
+            <button type="button" class="btn btn-sub" data-preset="bad">差し戻しサンプルを入れる</button>
+            <button type="button" class="btn btn-sub" data-preset="duplicate">二重計上サンプルを入れる</button>
+          </div>
+          <label class="field-label" for="raw-text">請求書・領収書の文字列（PDFや画面からコピーしたもの）</label>
+          <textarea id="raw-text" name="rawText" class="field-control field-text" rows="9" placeholder="発行者: ○○株式会社&#10;登録番号: T0000000000000&#10;発行日: 2026年11月12日&#10;10%対象 10,000円 消費税 1,000円&#10;合計 11,000円"></textarea>
+          <details class="adv">
+            <summary class="adv-sum">システム連携・上級者向け：構造化JSONで直接指定する場合（クリックで開く）</summary>
+            <label class="field-label" for="voucher-json">構造化JSON（任意。入れた項目は貼り付けた文字列より優先されます）</label>
+            <textarea id="voucher-json" name="voucherJson" class="field-control" rows="3" placeholder='{"issuerName":"…","registrationNumber":"T…"}'></textarea>
+          </details>
+          <label class="field-label" for="receipt-image">レシート画像（任意・PNG / JPEG・10MBまで）</label>
+          <p class="note">※画像はピンボケ・暗潰れの画質チェック専用であり、文字の自動読み取り（OCR）は行いません。金額や登録番号の検算には請求書PDF等からコピーしたテキストを貼り付けてください。</p>
+          <input id="receipt-image" name="receiptImage" type="file" accept="image/png,image/jpeg" class="field-control" />
+          <button type="submit" class="btn" id="btn-inspect">この証憑を検疫する</button>
+        </form>
+        <div class="result-card" id="result-zone" aria-live="polite">
+          <h3 class="card-h3">検疫結果</h3>
+          <p class="result-empty" id="result-empty">結果はここに表示されます。入力不備や判定不能のときは、推測で合格にせず、不足項目と次の手を返します。</p>
+          <div id="result-body"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="limits" aria-labelledby="limits-title">
+      <h2 class="section-h2" id="limits-title">未対応の範囲と、停止したときの次の手</h2>
+      <div class="io-grid">
+        <div class="io-card io-card-net">
+          <h3 class="card-h3">① 未対応・税理士または担当者による最終確認が必要な範囲</h3>
+          <ul class="list">
+            <li class="list-item">国税庁公表サイトでのリアルタイム失効照会（登録の取消・失効は本ツールでは分かりません）。<a class="link" href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" rel="noopener">国税庁 適格請求書発行事業者公表サイトで確認する</a></li>
+            <li class="list-item">個人事業主の T番号の実在照会（本ツールは検査用数字の算式照合のみ。実在は保証しません）</li>
+            <li class="list-item">免税事業者等からの課税仕入れに対する経過措置（80% / 50% 控除）の適用判断</li>
+            <li class="list-item">手書き文字・かすれ文字の読み取り（文字の自動読み取り（OCR）は行わないため、貼り付けた文字列の転記ミスは検知できません）</li>
+            <li class="list-item">勘定科目・按分・事業用/私用の最終的な税務判断</li>
+          </ul>
+        </div>
+        <div class="io-card io-card-net">
+          <h3 class="card-h3">② 入力不備・上限超過・判定不能のときの挙動</h3>
+          <ul class="list">
+            <li class="list-item">推測で合格を出しません。読めない・欠けている項目は差し戻し（停止）にし、不足項目を一覧で返します</li>
+            <li class="list-item">画像が暗い・ぼやけ・傾き・低解像度・読み込み不能のときは、再撮影の指示を返します</li>
+            <li class="list-item">1日 30 件の枠を超えると、その場で停止し、翌日（日本時間）まで受け付けません</li>
+            <li class="list-item">画像が 10MB を超える・構造化データの書式が不正・入力が空のときは、入力エラーとして停止し、何を直すかを返します</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">常に表示される確認事項（検疫結果にも同じ文が付きます）:</p>
+      <ul class="list">
+        <li class="list-item">手書き・かすれ文字の読み取り誤り（本ツールは OCR をしないため、貼り付けテキストの転記ミスは検知できません）</li>
+        <li class="list-item">免税事業者等からの課税仕入れに対する経過措置（80% / 50% 控除）の適用判断は、税理士またはご自身で確認してください</li>
+        <li class="list-item">勘定科目・按分・事業用/私用の区分の最終確定は、税理士またはご自身で確認してください</li>
+        <li class="list-item">登録番号の実在・登録期間は国税庁の適格請求書発行事業者公表サイトで確認してください（本ツールは外部照会せず、検査用数字の算式照合のみ）</li>
+      </ul>
+    </section>
+
+    <section class="section" id="pricing" aria-labelledby="pricing-title">
+      <h2 class="section-h2" id="pricing-title">料金と検証条件・技術仕様</h2>
+      <div class="table-wrap"><table class="data-table">
+        <caption class="table-cap">記載する数値はすべて、条件・日付・件数を併記しています</caption>
+        <thead><tr><th scope="col">項目</th><th scope="col">内容</th><th scope="col">根拠・条件</th></tr></thead>
+        <tbody>
+          <tr><td>無料枠</td><td>1日 30 件まで 0円</td><td>本サーバーの設定値（日本時間の暦日・端末キーごとに集計）</td></tr>
+          <tr><td>Proプラン（予定）</td><td>月額税込 1,628円（税抜 1,480円 ＋ 消費税10% 148円）</td><td>予定価格・未提供（2026-11-12 時点の想定）。1,480 × 10% = 148、1,480 + 148 = 1,628</td></tr>
+          <tr><td>検疫サンプル3件の処理時間</td><td>実測平均 3.34ms（最大 9.65ms）</td><td>2026-11-14 ローカル計測 ／ 実行環境 Node.js v24.14.0 ／ 内蔵サンプル証憑 n=3 ／ 初回実行を含む</td></tr>
+          <tr><td>サンプル検疫の結果</td><td>検疫通過サンプル 通過 ／ 差し戻しサンプル 差し戻し（停止） ／ 二重計上サンプル 差し戻し（停止）</td><td>2026-11-14 内蔵サンプル n=3 をページ生成時に実行した結果</td></tr>
+          <tr><td>実装方式</td><td>画面・サーバー＝Hono ／ 履歴・重複台帳＝SQLite ／ 画像の画質検査＝Sharp</td><td>2026-11-14 時点の構成。第1段の検査（要件・税額・重複・画質）は外部送信なしで動作</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">効果の大きさ（何%減る等）や利用社数は、測定していないため記載しません。</p>
+    </section>
+
+    <section class="section" id="history" aria-labelledby="history-title">
+      <h2 class="section-h2" id="history-title">この端末の検疫履歴</h2>
+      <p class="note">履歴はお使いの端末ごとに分けて表示します（他の利用者の履歴は表示されません）。</p>
+      <div class="stat-grid" id="stat-grid" hidden></div>
+      <p class="note"><button type="button" class="btn btn-sub" id="btn-history-csv">この端末の履歴をCSVでダウンロード</button></p>
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th scope="col">番号</th><th scope="col">日時（日本時間）</th><th scope="col">判定</th><th scope="col">主な指摘</th><th scope="col">発行者</th><th scope="col">税込合計</th><th scope="col">レポート</th></tr></thead>
+        <tbody id="history-body"><tr><td colspan="7">この端末の検疫履歴はまだありません。「ライブ試運転」で検疫すると、ここに記録されます。</td></tr></tbody>
+      </table></div>
+    </section>
+
+    
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">導入のご相談・実データ1件の無料検疫サンプルのご依頼</h2>
+      <p class="inquiry-lead">「手元の請求書・領収書1件で、適格6要件と税額の検算結果を見たい」「自社の会計ソフトの取込列に合わせたい」という場合は、下のフォームから送信してください。決済情報の入力は不要です。登録番号の実在確認は、国税庁の適格請求書発行事業者公表サイトでお願いします。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="実データ1件での無料検疫サンプル作成希望">実データ1件での無料検疫サンプル作成希望</option><option value="freee / マネーフォワードの取込列への適合相談">freee / マネーフォワードの取込列への適合相談</option><option value="社内用の検疫環境の構築見積り相談">社内用の検疫環境の構築見積り相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: 月50件ほどの請求書・領収書について、freee取込前のインボイス要件チェックと仕訳CSV変換を試したいです。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#bench" class="inquiry-alt-link">上のライブ試運転へ戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "経費証憑の検疫デスク" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+  </main>
+
+  <script type="application/json" id="preset-data">{"good":"請求書\n発行者: 株式会社サンプル商事\n登録番号: T6700012345678\n発行日: 2026年11月12日\n株式会社デモ工房 御中\n但し コピー用紙 A4 および ※お茶代（軽減税率対象）\n10%対象 10,000円 消費税 1,000円\n※8%対象（軽減税率） 2,000円 消費税 160円\n合計 13,160円","bad":"請求書\n発行者: テスト物販株式会社\n登録番号: T4800012345679\n発行日: 2026年11月12日\n株式会社デモ工房 御中\n但し お品代として\n10%対象 10,000円 消費税 1,000円\n8%対象 1,800円 消費税 180円\n合計 12,980円","duplicate":"請求書\n発行者: （株）サンプル商事\n登録番号: T6700012345678\n発行日: 2026年11月12日\n株式会社デモ工房 御中\n但し コピー用紙 A4 および ※お茶代（軽減税率対象）\n10%対象 10,000円 消費税 1,000円\n※8%対象（軽減税率） 2,000円 消費税 160円\n合計 13,160円"}</script>
+  <script type="application/json" id="issue-labels">{"ISSUER_NAME_MISSING":"発行事業者名なし","REG_NUMBER_MISSING":"登録番号なし","REG_NUMBER_INVALID_FORMAT":"登録番号の形式不正","INVALID_CHECK_DIGIT":"法人の登録番号の検査用数字が不一致","SOLE_PROPRIETOR_REGISTRY_CHECK":"個人事業主等の登録番号（公表サイト照会推奨）","ISSUE_DATE_MISSING":"取引年月日なし","ISSUE_DATE_INVALID":"取引年月日が実在しない日付","DESCRIPTION_MISSING":"取引内容なし","REDUCED_MARKER_MISSING":"軽減税率の表記なし","DESCRIPTION_VAGUE":"取引内容が曖昧（「お品代」等）","DESCRIPTION_VAGUE_AI":"取引内容が曖昧な可能性（第2段AI判定）","TAX_BREAKDOWN_MISSING":"税率ごとの対価・税額なし","TAX_BREAKDOWN_INCOMPLETE":"税率区分の対象額か税額が欠けている","RECIPIENT_MISSING":"交付を受ける事業者名なし","AMOUNT_INVALID":"金額が整数の円として読めない","ITEM_AMOUNT_INVALID":"明細金額が不正","UNKNOWN_TAX_RATE":"明細の税率が 10/8/0 以外","ITEMS_SUBTOTAL_MISMATCH":"明細合計と対象額が不一致","TAX_DATA_MISSING":"税額情報が読み取れない（検証不能）","TAX_AMOUNT_MISSING":"税率区分の対象額か消費税額が欠けている","TOTAL_MISSING":"税込合計なし（検証不能）","TAX10_MISMATCH":"10%の消費税額が理論値と不一致","TAX8_MISMATCH":"軽減8%の消費税額が理論値と不一致","RATE_CONFUSION_8_AS_10":"軽減8%の品目を10%で計算している疑い","RATE_CONFUSION_10_AS_8":"10%の品目を軽減8%で計算している疑い","TOTAL_MISMATCH":"税込合計が算術的に一致しない","DUPLICATE_VOUCHER":"二重計上の疑い（日付・発行者・金額が一致）","DATE_BEFORE_INVOICE_SYSTEM":"インボイス制度開始日(2023-10-01)より前の日付","IMG_UNDECODABLE":"画像を読み込めない","IMG_LOW_RESOLUTION":"解像度不足","IMG_UNDEREXPOSED":"暗潰れ","IMG_OVEREXPOSED":"白飛び","IMG_LOW_CONTRAST":"低コントラスト","IMG_BLURRY":"ピンボケ疑い","IMG_SKEWED":"傾き"}</script>
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      var presets = JSON.parse($('preset-data').textContent);
+      var LABELS = JSON.parse($('issue-labels').textContent);
+      var VERDICT_JA = { PASS: '通過', WARN: '警告あり（確認のうえ通過）', FAIL: '差し戻し（停止）' };
+      var ERR_JA = {
+        NO_INPUT: '入力がありません', DAILY_FREE_LIMIT_REACHED: '本日の無料枠に達しました', INVALID_VOUCHER_JSON: '構造化データを読み取れません',
+        INVALID_BODY: '送信内容を読み取れません', IMAGE_TOO_LARGE: '画像が大きすぎます', TEXT_TOO_LARGE: '文字数が多すぎます', PAYLOAD_TOO_LARGE: '送信サイズが大きすぎます',
+        INVALID_TARGET: '出力先の指定が不正です', NO_VOUCHERS: '出力する証憑がありません', TOO_MANY_VOUCHERS: '一度に出力できる件数を超えています', NETWORK: '通信できませんでした'
+      };
+      var lastResult = null;
+      var memCk = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      function clientKey() { try { return window.__zolGetClientKey ? window.__zolGetClientKey() : memCk; } catch (e) { return memCk; } }
+      function hdr(extra) { var h = { 'x-client-key': clientKey() }; for (var k in (extra || {})) h[k] = extra[k]; return h; }
+      function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+      function yen(n) { return n == null ? '—' : Number(n).toLocaleString('en-US') + '円'; }
+      function label(code) { return !code || code === 'clear' ? '指摘なし' : (LABELS[code] || '検査項目に不一致'); }
+      function jst(iso) { var t = Date.parse(iso || ''); return isFinite(t) ? new Date(t + 9 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ') : '—'; }
+      function tag(v) { return '<span class="tag verdict-' + String(v || 'fail').toLowerCase() + '">' + esc(VERDICT_JA[v] || v) + '</span>'; }
+      function okTag(ok) { return '<span class="tag ' + (ok ? 'verdict-pass' : 'verdict-fail') + '">' + (ok ? 'OK' : 'NG') + '</span>'; }
+      function show(html) { $('result-empty').style.display = 'none'; $('result-body').innerHTML = html; }
+      function render(data) {
+        var r = data.result; lastResult = r;
+        var reqs = r.requirements.map(function (q) {
+          return '<li class="list-item">要件' + q.no + ' ' + esc(q.label) + '： ' + okTag(q.ok) + ' ' + esc(q.detail) + '</li>';
+        }).join('');
+        var issues = r.issues.map(function (i) {
+          return '<li class="list-item"><b>' + esc(label(i.code)) + '</b> ' + (i.severity === 'error' ? '【停止】' : '【警告】') + esc(i.message) + (i.nextAction ? ' → 次の手: ' + esc(i.nextAction) : '') + '</li>';
+        }).join('');
+        var S = r.summary;
+        var dup = r.duplicate && r.duplicate.isDuplicate ? '<p class="note">二重計上の疑い: 過去に通した証憑と一致しました（' + (r.duplicate.source === 'ledger' ? 'このサーバーの台帳' : '同じ送信内') + '）。</p>' : '';
+        var img = r.image ? '<p class="note">画像の画質検査: ' + (r.image.warnings.length ? '再撮影を推奨 — ' + r.image.warnings.map(function (w) { return esc(w.message) + '（' + esc(w.nextAction) + '）'; }).join(' / ') : '画質の目安は問題ありません（文字の読み取りは行っていません）') + '</p>' : '';
+        var ai = r.ai && r.ai.requested ? '<p class="note">第2段（任意キー）: ' + (r.ai.ok ? '曖昧さ確率 ' + Math.round(r.ai.ambiguityProbability * 100) + '%（参考値）' : '実行できませんでした。第1段の結果のみ有効です') + '</p>' : '';
+        var failed = r.verdict === 'FAIL';
+        var csvBtns = failed
+          ? '<p class="note">差し戻し（停止）の証憑は、誤計上防止のため既定では仕訳CSVに出力されません。要確認フラグ付きで出力する場合だけ、下のボタンを使ってください。</p><div class="cta-row"><button type="button" class="btn btn-sub" data-csv="freee" data-flag="1">要確認フラグ付きで freee CSV</button><button type="button" class="btn btn-sub" data-csv="mf" data-flag="1">要確認フラグ付きで マネーフォワード CSV</button>'
+          : '<div class="cta-row"><button type="button" class="btn btn-sub" data-csv="freee">freee CSV</button><button type="button" class="btn btn-sub" data-csv="mf">マネーフォワード CSV</button>';
+        show('<div class="sample-line">' + tag(r.verdict) + '<span class="note">エラー ' + r.errorCount + ' 件・警告 ' + r.warnCount + ' 件（受付番号 #' + esc(data.id) + '）</span></div>' +
+          '<p class="note">10%: ' + yen(S.subtotal10) + ' / 税 ' + yen(S.tax10) + '　軽減8%: ' + yen(S.subtotal8) + ' / 税 ' + yen(S.tax8) + '　税込合計: ' + yen(S.totalGross) + '</p>' +
+          '<ul class="list">' + reqs + '</ul>' + (issues ? '<p class="note"><b>指摘事項</b></p><ul class="list">' + issues + '</ul>' : '<p class="note">指摘事項はありません。</p>') + dup + img + ai +
+          csvBtns + '<a class="link" href="/api/report/' + esc(data.id) + '?clientKey=' + encodeURIComponent(clientKey()) + '" target="_blank" rel="noopener">印刷用レポートを開く</a></div>' +
+          '<p class="note">残り枠: ' + esc(data.quota.remaining) + ' / ' + esc(data.quota.dailyFreeLimit) + ' 件</p>');
+        loadHistory();
+      }
+      function renderError(data, status) {
+        var code = data && data.error;
+        var miss = (data && data.missing) ? '<ul class="list">' + data.missing.map(function (m) { return '<li class="list-item">' + esc(m) + '</li>'; }).join('') + '</ul>' : '';
+        show('<p class="note"><b>停止: ' + esc(ERR_JA[code] || '入力を確認してください') + '</b></p><p class="note">' + esc((data && data.message) || '') + '</p>' + miss);
+      }
+      function loadHistory() {
+        fetch('/api/history', { headers: hdr() }).then(function (res) { return res.json(); }).then(function (d) {
+          if (!d || !d.ok) return;
+          var total = d.stats.totalInspections;
+          $('stat-grid').hidden = !(total > 0);
+          if (total > 0) {
+            var vals = [total + ' 件', d.stats.defectsBlocked + ' 件', d.stats.duplicatesDetected + ' 件', (d.stats.avgLatencyMs < 0.01 ? '0.01ms未満' : d.stats.avgLatencyMs.toFixed(2) + 'ms')];
+            var labs = ['検疫した証憑', '不備で差し戻した件数', '二重計上を検知した件数', '平均処理時間'];
+            $('stat-grid').innerHTML = vals.map(function (v, i) { return '<div class="stat-card"><p class="note">' + labs[i] + '</p><b class="stat-val">' + esc(v) + '</b></div>'; }).join('');
+          }
+          if (d.history.length) {
+            $('history-body').innerHTML = d.history.map(function (r) {
+              return '<tr><td>#' + esc(r.id) + '</td><td>' + esc(jst(r.created_at)) + '</td><td>' + tag(r.verdict) + '</td><td>' + esc(label(r.top_issue)) + '</td><td>' + esc(r.issuer_name || '—') + '</td><td>' + esc(r.total_gross == null ? '—' : yen(r.total_gross)) + '</td><td><a class="link" href="/api/report/' + esc(r.id) + '?clientKey=' + encodeURIComponent(clientKey()) + '">レポートを開く</a></td></tr>';
+            }).join('');
+          }
+        }).catch(function () { /* 静的ファイルとして開いている場合は履歴なし */ });
+      }
+      function download(blob, name) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      }
+      document.querySelectorAll('[data-preset]').forEach(function (b) {
+        b.addEventListener('click', function () { $('raw-text').value = presets[b.getAttribute('data-preset')] || ''; $('voucher-json').value = ''; $('receipt-image').value = ''; });
+      });
+      $('form-inspect').addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        var btn = $('btn-inspect'); btn.disabled = true;
+        try {
+          var file = $('receipt-image').files[0];
+          var jsonText = $('voucher-json').value.trim();
+          var opts;
+          if (file) {
+            var fd = new FormData();
+            fd.set('receiptImage', file); fd.set('rawText', $('raw-text').value); fd.set('voucherJson', jsonText);
+            opts = { method: 'POST', headers: hdr(), body: fd };
+          } else {
+            var voucher = null;
+            if (jsonText) { try { voucher = JSON.parse(jsonText); } catch (e) { renderError({ error: 'INVALID_VOUCHER_JSON', message: '構造化JSONとして読めません。括弧・引用符を確認してください。' }, 400); return; } }
+            opts = { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ rawText: $('raw-text').value, voucher: voucher }) };
+          }
+          var res = await fetch('/api/inspect', opts); var data = await res.json();
+          if (!data.ok) renderError(data, res.status); else render(data);
+        } catch (e) {
+          var isStatic = typeof location !== 'undefined' && location.protocol === 'file:';
+          renderError({
+            error: 'NETWORK',
+            message: isStatic
+              ? 'この保存版ファイル（オフライン見本）ではブラウザ単体での試運転は実行できません。上の出力見本をご覧いただくか、ページ下部のご相談フォームから無料サンプル検品をご依頼ください。'
+              : '通信できませんでした。ネットワークとサーバーの状態をご確認のうえ、もう一度お試しください。'
+          }, 0);
+        }
+        finally { btn.disabled = false; }
+      });
+      $('result-body').addEventListener('click', async function (ev) {
+        var b = ev.target.closest('[data-csv]'); if (!b || !lastResult) return;
+        var target = b.getAttribute('data-csv');
+        var res = await fetch('/api/export-csv', { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ vouchers: [lastResult.voucher], target: target, includeFailed: b.getAttribute('data-flag') === '1' }) });
+        if (!res.ok) { renderError(await res.json(), res.status); return; }
+        download(await res.blob(), 'snapledger_' + target + '.csv');
+      });
+      $('btn-history-csv').addEventListener('click', async function () {
+        try {
+          var res = await fetch('/api/history?format=csv', { headers: hdr() });
+          if (!res.ok) throw new Error('x');
+          download(await res.blob(), 'snapledger_history.csv');
+        } catch (e) { renderError({ error: 'NETWORK', message: '履歴を取得できませんでした。' }, 0); }
+      });
+      loadHistory();
+    })();
+  </script>
+</body>
+</html>
