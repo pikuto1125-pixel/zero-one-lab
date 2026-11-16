@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>予約の二重ブッキングを、確定の前に止める — 予約ガード</title>
+<style>
+:root{--paper:#f6f8fa;--ink:#16202a;--muted:#4a5a68;--accent:#0f5c6e;--line:#cfd8df;--stop:#8a1c14;--tint:#e3f1f4;--stoptint:#fbe9e7}
+*{box-sizing:border-box}
+html{font-family:"BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif;background:var(--paper);color:var(--ink);line-height:1.7}
+body{margin:0;padding:0 20px 64px;background:var(--paper);color:var(--ink);text-spacing-trim:space-all}
+b,strong{font-weight:700}
+.meta,p,li,td,th,footer,code{overflow-wrap:anywhere}
+code{font-family:Consolas,"BIZ UDGothic",monospace;font-size:14px;line-height:1.5;font-weight:400}
+main{max-width:920px;margin:0 auto}
+header{padding:48px 0 16px}
+h1{font-size:32px;line-height:1.3;font-weight:700;margin:0 0 12px}
+h2{font-size:22px;line-height:1.4;font-weight:700;margin:40px 0 12px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+h3{font-size:18px;line-height:1.5;font-weight:700;margin:20px 0 8px}
+p,li,td,a,label,span{font-size:16px;line-height:1.7;font-weight:400}
+th,small,.meta{font-size:14px;line-height:1.5}
+th{font-weight:700;text-align:left}
+small,.meta{font-weight:400;color:var(--muted)}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.disclosure{border:1px solid var(--ink);background:#fff;padding:12px 16px;margin:16px 0}
+.cta-btn{display:inline-block;background:var(--accent);color:#fff;padding:12px 24px;font-weight:700;text-decoration:none;margin:8px 8px 0 0}
+.cta-btn.sub{background:#fff;color:var(--accent);border:2px solid var(--accent)}
+.cta-btn:hover{background:var(--ink);color:#fff}
+table{width:100%;border-collapse:collapse;margin:8px 0;background:#fff}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.num{font-variant-numeric:tabular-nums}
+ul{margin:4px 0;padding-left:20px}
+.badge{display:inline-block;padding:1px 8px;background:var(--tint);color:#0b4756;font-size:14px;line-height:1.5;font-weight:700;border:1px solid var(--accent)}
+.badge.stop{background:var(--stoptint);color:var(--stop);border-color:var(--stop)}
+.lane-row{display:flex;align-items:center;gap:12px;margin:6px 0}
+.lane-label{flex:0 0 7em}
+.lane{position:relative;flex:1 1 auto;min-width:0;height:16px;background:#e1e8ed}
+.blk{position:absolute;top:0;bottom:0;background:var(--accent);border-left:1px solid #fff}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.presets[hidden]{display:none}
+button{font:inherit;font-size:16px;font-weight:700;background:#fff;color:var(--ink);border:2px solid var(--ink);padding:10px 16px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+#demo-panel{background:#fff;border:1px solid var(--line);padding:12px 16px;min-height:60px}
+#demo-panel table{margin:8px 0}
+footer{margin-top:48px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){table{display:block;overflow-x:auto}.lane-label{flex-basis:5.5em}}
+@media print{body{background:#fff}.cta-btn,button{display:none}table{display:table}}
+
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="meta">Zero-One Venture Lab ／ 店舗・サロン・クリニック・貸会議室向け 予約ガード</p>
+  <h1>予約の二重ブッキングを、確定の前に止める</h1>
+  <p>同じ時間にほぼ同時に入った申込でも、先着の 1 件だけを確定し、後着は二重予約にせず止めて代替枠と待機リストを返します。前日リマインドは同じ操作を何度繰り返しても 1 通だけ。確定・遮断・キャンセルの履歴は改ざんを検知できる証跡として残ります。</p>
+  <p class="disclosure">標準構成は外部通信ゼロ（すべてお手元のパソコン内で動き、同じ入力には毎回同じ判定を返します）で動作します。AI補助オプションを有効にしたときだけ指定のAPIへ通信し、通信できないときは合格にせず「判定不能」で安全に停止します。</p>
+</header>
+
+<h2 id="demo">3つの場面を切り替えて試す</h2>
+<p>ボタンで場面を切り替えると、判定結果と代替枠が入れ替わります。表示は 2026-11-15 にエンジンを実行した結果です（例示データ・実在の予約ではありません）。</p>
+<div class="presets" id="preset-bar" hidden>
+  <button type="button" data-preset="normal" aria-pressed="true">正常予約</button>
+  <button type="button" data-preset="dirty" aria-pressed="false">汚れデータ正規化</button>
+  <button type="button" data-preset="race" aria-pressed="false">14:00 同時アクセス衝突テスト</button>
+</div>
+<div id="demo-panel" aria-live="polite">
+<p><span class="badge">全件確定（衝突なし）</span> 申込 6 件、確定 6 件、合計稼働 435 分（準備込み 500 分）。</p>
+<p class="meta">横棒は 09:00〜20:00 の占有（準備インターバルを含む）。数値は下の表が正本です。</p>
+<div class="lane-row"><span class="lane-label">チェア1</span><div class="lane" aria-hidden="true"><span class="blk" style="left:4.55%;width:10.61%"></span><span class="blk" style="left:18.18%;width:15.91%"></span><span class="blk" style="left:45.45%;width:10.61%"></span></div></div>
+<div class="lane-row"><span class="lane-label">チェア2</span><div class="lane" aria-hidden="true"><span class="blk" style="left:9.09%;width:10.61%"></span><span class="blk" style="left:45.45%;width:8.33%"></span></div></div>
+<div class="lane-row"><span class="lane-label">会議室A</span><div class="lane" aria-hidden="true"><span class="blk" style="left:36.36%;width:19.70%"></span></div></div>
+<table>
+<tr><th>リソース</th><th>時間帯</th><th>占有終了（準備込み）</th><th>お客様</th><th>状態</th></tr>
+<tr><td>チェア1</td><td class="num">09:30〜10:30</td><td class="num">10:40</td><td>山田 花子</td><td><span class="badge">確定</span></td></tr>
+<tr><td>チェア1</td><td class="num">11:00〜12:30</td><td class="num">12:45</td><td>佐藤 次郎</td><td><span class="badge">確定</span></td></tr>
+<tr><td>チェア1</td><td class="num">14:00〜15:00</td><td class="num">15:10</td><td>鈴木 美咲</td><td><span class="badge">確定</span></td></tr>
+<tr><td>チェア2</td><td class="num">10:00〜11:00</td><td class="num">11:10</td><td>高橋 健</td><td><span class="badge">確定</span></td></tr>
+<tr><td>チェア2</td><td class="num">14:00〜14:45</td><td class="num">14:55</td><td>田中 優</td><td><span class="badge">確定</span></td></tr>
+<tr><td>会議室A</td><td class="num">13:00〜15:00</td><td class="num">15:10</td><td>株式会社ノースライト</td><td><span class="badge">確定</span></td></tr>
+</table>
+<p>前日リマインドは 1 回目 <b>6 通</b>を作成、同じ操作の 2 回目は <b>0 通</b>（6 件を重複として遮断）。送信は人間が確認してから行います。</p>
+</div>
+
+<h2>同時予約の衝突を止めた実例</h2>
+<p>チェア1 の 14:00 に 3 名がほぼ同時（受付は 1〜3 ミリ秒差）に申し込んだ場合、受付順で先着 1 名だけを確定し、残りは二重ブッキングにせず止めて代替枠と待機リストを返します。合計の二重予約リスクは <b>13,200円</b> です。</p>
+<table>
+<tr><th>お客様</th><th>判定</th><th>停止の理由</th><th>同日の代替枠（最大3件）</th><th>待機登録キー</th></tr>
+<tr><td>井上 翔</td><td><span class="badge">先着で確定</span></td><td>—</td><td>—</td><td><code>—</code></td></tr>
+<tr><td>松本 駿</td><td><span class="badge stop">遮断</span></td><td>同じ枠への二重予約（時間帯の重複）<br><small>二重予約リスク 6,600円</small></td><td><ul><li>チェア2 14:00〜15:00（希望から 0 分）</li><li>チェア2 13:30〜14:30（希望から -30 分）</li><li>チェア2 14:30〜15:30（希望から 30 分）</li></ul></td><td><code>2a619bbee796</code></td></tr>
+<tr><td>木村 凛</td><td><span class="badge stop">遮断</span></td><td>同じ枠への二重予約（時間帯の重複）<br><small>二重予約リスク 6,600円</small></td><td><ul><li>チェア2 14:00〜15:00（希望から 0 分）</li><li>チェア2 13:30〜14:30（希望から -30 分）</li><li>チェア2 14:30〜15:30（希望から 30 分）</li></ul></td><td><code>c2293f617326</code></td></tr>
+</table>
+<h3>先着のお客様がキャンセルしたとき</h3>
+<p>枠 14:00〜15:00 が空きました。待機リストの先着から適合する 1 件を <b>繰上げ候補</b>として提示します（松本 駿 様・<b>人間が確認してから連絡</b>。自動送信はしていません）。</p>
+
+<h2>変更証跡台帳（ハッシュ連鎖）</h2>
+<p>すべての確定・遮断・キャンセル・リマインドは、ひとつ前の記録のハッシュを含めて連鎖する変更証跡として残ります。連鎖の検証結果: <span class="badge">改ざんなし</span>（全 7 件のうち先頭 7 件を表示）</p>
+<table>
+<tr><th>番号</th><th>出来事</th><th>この記録のハッシュ（先頭16桁）</th><th>ひとつ前のハッシュ</th></tr>
+<tr><td class="num">1</td><td>予約を確定</td><td><code>e9cc3bdca262ec3a</code></td><td><code>0000000000000000</code></td></tr>
+<tr><td class="num">2</td><td>待機リストに登録</td><td><code>e43a161da2c496ba</code></td><td><code>e9cc3bdca262ec3a</code></td></tr>
+<tr><td class="num">3</td><td>申込を遮断</td><td><code>34997186e78045c6</code></td><td><code>e43a161da2c496ba</code></td></tr>
+<tr><td class="num">4</td><td>待機リストに登録</td><td><code>f4bb82818dd4d1ba</code></td><td><code>34997186e78045c6</code></td></tr>
+<tr><td class="num">5</td><td>申込を遮断</td><td><code>294e562e424bd1db</code></td><td><code>f4bb82818dd4d1ba</code></td></tr>
+<tr><td class="num">6</td><td>キャンセル受付</td><td><code>ee36204582d0bee9</code></td><td><code>294e562e424bd1db</code></td></tr>
+<tr><td class="num">7</td><td>繰上げ候補（人間確認待ち）</td><td><code>2ba7a9ab19b4c2b7</code></td><td><code>ee36204582d0bee9</code></td></tr>
+</table>
+
+<h2>止める4つの欠陥</h2>
+<table>
+<tr><th>検査</th><th>内容</th></tr>
+<tr><td>同じ枠への二重予約</td><td>同じ担当・部屋・チェアの時間帯が重なる申込（準備インターバルを含む）を、受付ミリ秒の先着順で判定し、後着を止めます。</td></tr>
+<tr><td>時刻の誤り</td><td>終了が開始以前、または営業時間 09:00〜20:00 の外にはみ出す申込を止めます。</td></tr>
+<tr><td>定員超過</td><td>人数が部屋・席の定員を超える申込を止めます。</td></tr>
+<tr><td>連打・再送の重複申込</td><td>同一顧客・同一日時の申込を SHA-256 の冪等キーで 1 件に抑えます。</td></tr>
+</table>
+<p>AI補助を有効にしても通信できない時は「判定不能」として止まり、推測で合格にはしません。</p>
+
+<h2>検証条件・技術仕様</h2>
+<table>
+<tr><th>項目</th><th>内容</th><th>測定日・条件</th></tr>
+<tr><td>実装方式</td><td>Node.js 標準モジュール＋SQLite（予約・排他ロック・待機リスト・通知冪等・証跡の 5 表）</td><td>2026-11-15 ／ 判定エンジンは標準モジュール＋SQLite のみ</td></tr>
+<tr><td>この画面の数値</td><td>申込 6 件・同時申込 3 件・汚れた入力 3 種をエンジンで実行</td><td>2026-11-15 ／ 例示データ ／ 決定論モード</td></tr>
+</table>
+
+<h2>未対応の範囲と、停止したときの次の手</h2>
+<ul>
+<li>LINE・メールの送信はこのツールからは行いません。作成した文面を、人間が確認してから送ってください。</li>
+<li>キャンセル時の繰上げは「候補」の提示までです。お客様への連絡と確定は人間が行います。</li>
+<li>営業時間は 1 日 1 区間（09:00〜20:00）を前提にしています。日またぎ・休憩時間の設定は未対応です。</li>
+<li>欠陥を検知した申込は台帳に確定しません。代替枠または待機リストの候補をお客様へご案内ください。</li>
+</ul>
+
+<footer>
+
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">御社の予約表で無料診断・試運転を相談する</h2>
+      <p class="inquiry-lead">お使いの予約表の形式（スプレッドシート・予約システムの出力）に合わせた試運転が可能です。ダミー値の予約表 1 件から、実際の判定結果の見本をお作りします。決済情報の入力は不要です。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="ダミー値の予約表 1 件での無料診断・見本作成の希望">ダミー値の予約表 1 件での無料診断・見本作成の希望</option><option value="自社の予約表の形式に合わせた試運転の相談">自社の予約表の形式に合わせた試運転の相談</option><option value="導入・カスタマイズのお見積り相談">導入・カスタマイズのお見積り相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: 美容室でチェア 3 台、電話・LINE・予約サイトから受けた予約をスプレッドシートにまとめています。二重予約を確定前に止める試運転を希望します。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#demo" class="inquiry-alt-link">上の 3 つの場面へ戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "予約ガード" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+</footer>
+</main>
+<script type="application/json" id="preset-data">{"normal":"\u003cp>\u003cspan class=\"badge\">全件確定（衝突なし）\u003c/span> 申込 6 件、確定 6 件、合計稼働 435 分（準備込み 500 分）。\u003c/p>\n\u003cp class=\"meta\">横棒は 09:00〜20:00 の占有（準備インターバルを含む）。数値は下の表が正本です。\u003c/p>\n\u003cdiv class=\"lane-row\">\u003cspan class=\"lane-label\">チェア1\u003c/span>\u003cdiv class=\"lane\" aria-hidden=\"true\">\u003cspan class=\"blk\" style=\"left:4.55%;width:10.61%\">\u003c/span>\u003cspan class=\"blk\" style=\"left:18.18%;width:15.91%\">\u003c/span>\u003cspan class=\"blk\" style=\"left:45.45%;width:10.61%\">\u003c/span>\u003c/div>\u003c/div>\n\u003cdiv class=\"lane-row\">\u003cspan class=\"lane-label\">チェア2\u003c/span>\u003cdiv class=\"lane\" aria-hidden=\"true\">\u003cspan class=\"blk\" style=\"left:9.09%;width:10.61%\">\u003c/span>\u003cspan class=\"blk\" style=\"left:45.45%;width:8.33%\">\u003c/span>\u003c/div>\u003c/div>\n\u003cdiv class=\"lane-row\">\u003cspan class=\"lane-label\">会議室A\u003c/span>\u003cdiv class=\"lane\" aria-hidden=\"true\">\u003cspan class=\"blk\" style=\"left:36.36%;width:19.70%\">\u003c/span>\u003c/div>\u003c/div>\n\u003ctable>\n\u003ctr>\u003cth>リソース\u003c/th>\u003cth>時間帯\u003c/th>\u003cth>占有終了（準備込み）\u003c/th>\u003cth>お客様\u003c/th>\u003cth>状態\u003c/th>\u003c/tr>\n\u003ctr>\u003ctd>チェア1\u003c/td>\u003ctd class=\"num\">09:30〜10:30\u003c/td>\u003ctd class=\"num\">10:40\u003c/td>\u003ctd>山田 花子\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>チェア1\u003c/td>\u003ctd class=\"num\">11:00〜12:30\u003c/td>\u003ctd class=\"num\">12:45\u003c/td>\u003ctd>佐藤 次郎\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>チェア1\u003c/td>\u003ctd class=\"num\">14:00〜15:00\u003c/td>\u003ctd class=\"num\">15:10\u003c/td>\u003ctd>鈴木 美咲\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>チェア2\u003c/td>\u003ctd class=\"num\">10:00〜11:00\u003c/td>\u003ctd class=\"num\">11:10\u003c/td>\u003ctd>高橋 健\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>チェア2\u003c/td>\u003ctd class=\"num\">14:00〜14:45\u003c/td>\u003ctd class=\"num\">14:55\u003c/td>\u003ctd>田中 優\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>会議室A\u003c/td>\u003ctd class=\"num\">13:00〜15:00\u003c/td>\u003ctd class=\"num\">15:10\u003c/td>\u003ctd>株式会社ノースライト\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003c/table>\n\u003cp>前日リマインドは 1 回目 \u003cb>6 通\u003c/b>を作成、同じ操作の 2 回目は \u003cb>0 通\u003c/b>（6 件を重複として遮断）。送信は人間が確認してから行います。\u003c/p>","dirty":"\u003cp>全角・令和・半角カナ・電話番号の表記ゆれ・タブ区切りを正規化したうえで衝突を判定します。3 種類の汚れたデータはいずれも衝突なしで全件確定しました。\u003c/p>\n\u003ctable>\n\u003ctr>\u003cth>入力の種類\u003c/th>\u003cth>入力（そのまま）\u003c/th>\u003cth>正規化後\u003c/th>\u003cth>リソース\u003c/th>\u003cth>判定\u003c/th>\u003c/tr>\n\u003ctr>\u003ctd>全角数字・令和表記・全角コロン\u003c/td>\u003ctd>令和８年１１月２０日 １０：００\u003cbr>０９０－００００－０００１\u003c/td>\u003ctd class=\"num\">2026-11-20 10:00〜11:00\u003cbr>09000000001\u003c/td>\u003ctd>チェア1\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>全角数字・令和表記・全角コロン\u003c/td>\u003ctd>令和８年１１月２０日 １３：３０\u003cbr>０９０－００００－０００２\u003c/td>\u003ctd class=\"num\">2026-11-20 13:30〜15:00\u003cbr>09000000002\u003c/td>\u003ctd>チェア1\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>半角カナ・電話の表記ゆれ・準備時間\u003c/td>\u003ctd>R8.11.20 10:00\u003cbr>090 0000 0002\u003c/td>\u003ctd class=\"num\">2026-11-20 10:00〜11:30\u003cbr>09000000002\u003c/td>\u003ctd>チェア1\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>半角カナ・電話の表記ゆれ・準備時間\u003c/td>\u003ctd>R8.11.20 11:45\u003cbr>(090)0000-0003\u003c/td>\u003ctd class=\"num\">2026-11-20 11:45〜12:45\u003cbr>09000000003\u003c/td>\u003ctd>チェア1\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>半角カナ・電話の表記ゆれ・準備時間\u003c/td>\u003ctd>2026年11月20日 10:00\u003cbr>+81 90-0000-0004\u003c/td>\u003ctd class=\"num\">2026-11-20 10:00〜12:00\u003cbr>09000000004\u003c/td>\u003ctd>チェア2\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>表計算からのタブ区切り貼り付け\u003c/td>\u003ctd>2026/11/20 9:30\u003cbr>090-0000-0001\u003c/td>\u003ctd class=\"num\">2026-11-20 09:30〜10:30\u003cbr>09000000001\u003c/td>\u003ctd>チェア1\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>表計算からのタブ区切り貼り付け\u003c/td>\u003ctd>令和8年11月20日 14:00\u003cbr>０９０－００００－０００５\u003c/td>\u003ctd class=\"num\">2026-11-20 14:00〜14:45\u003cbr>09000000005\u003c/td>\u003ctd>チェア2\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>表計算からのタブ区切り貼り付け\u003c/td>\u003ctd>R8.11.20 13:00\u003cbr>03-0000-0006\u003c/td>\u003ctd class=\"num\">2026-11-20 13:00〜15:00\u003cbr>0300000006\u003c/td>\u003ctd>会議室A\u003c/td>\u003ctd>\u003cspan class=\"badge\">確定\u003c/span>\u003c/td>\u003c/tr>\n\u003c/table>","race":"\u003cp>チェア1 の 14:00 に 3 名がほぼ同時（受付は 1〜3 ミリ秒差）に申し込んだ場合、受付順で先着 1 名だけを確定し、残りは二重ブッキングにせず止めて代替枠と待機リストを返します。合計の二重予約リスクは \u003cb>13,200円\u003c/b> です。\u003c/p>\n\u003ctable>\n\u003ctr>\u003cth>お客様\u003c/th>\u003cth>判定\u003c/th>\u003cth>停止の理由\u003c/th>\u003cth>同日の代替枠（最大3件）\u003c/th>\u003cth>待機登録キー\u003c/th>\u003c/tr>\n\u003ctr>\u003ctd>井上 翔\u003c/td>\u003ctd>\u003cspan class=\"badge\">先着で確定\u003c/span>\u003c/td>\u003ctd>—\u003c/td>\u003ctd>—\u003c/td>\u003ctd>\u003ccode>—\u003c/code>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>松本 駿\u003c/td>\u003ctd>\u003cspan class=\"badge stop\">遮断\u003c/span>\u003c/td>\u003ctd>同じ枠への二重予約（時間帯の重複）\u003cbr>\u003csmall>二重予約リスク 6,600円\u003c/small>\u003c/td>\u003ctd>\u003cul>\u003cli>チェア2 14:00〜15:00（希望から 0 分）\u003c/li>\u003cli>チェア2 13:30〜14:30（希望から -30 分）\u003c/li>\u003cli>チェア2 14:30〜15:30（希望から 30 分）\u003c/li>\u003c/ul>\u003c/td>\u003ctd>\u003ccode>2a619bbee796\u003c/code>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>木村 凛\u003c/td>\u003ctd>\u003cspan class=\"badge stop\">遮断\u003c/span>\u003c/td>\u003ctd>同じ枠への二重予約（時間帯の重複）\u003cbr>\u003csmall>二重予約リスク 6,600円\u003c/small>\u003c/td>\u003ctd>\u003cul>\u003cli>チェア2 14:00〜15:00（希望から 0 分）\u003c/li>\u003cli>チェア2 13:30〜14:30（希望から -30 分）\u003c/li>\u003cli>チェア2 14:30〜15:30（希望から 30 分）\u003c/li>\u003c/ul>\u003c/td>\u003ctd>\u003ccode>c2293f617326\u003c/code>\u003c/td>\u003c/tr>\n\u003c/table>\n\u003ch3>先着のお客様がキャンセルしたとき\u003c/h3>\n\u003cp>枠 14:00〜15:00 が空きました。待機リストの先着から適合する 1 件を \u003cb>繰上げ候補\u003c/b>として提示します（松本 駿 様・\u003cb>人間が確認してから連絡\u003c/b>。自動送信はしていません）。\u003c/p>"}</script>
+<script>
+(function () {
+  var PRE = JSON.parse(document.getElementById('preset-data').textContent);
+  var panel = document.getElementById('demo-panel');
+  var bar = document.getElementById('preset-bar');
+  var buttons = bar.querySelectorAll('button[data-preset]');
+  bar.hidden = false;
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      buttons.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      panel.innerHTML = PRE[b.getAttribute('data-preset')];
+    });
+  });
+})();
+</script>
+</body>
+</html>
