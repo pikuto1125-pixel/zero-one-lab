@@ -1,22 +1,27 @@
-# Zero-One Venture Lab — 現場特化マイクロSaaS ＆ 実機ショーケース（全8種）
+# Zero-One Venture Lab — 現場・業務特化マイクロSaaS ＆ 実機ショーケース（全9種）
 
 **公開デモポータル（Cloudflare Edge）**: https://zero-one-lab.ai-hack-lab.workers.dev/
 
-現場・バックオフィス・店舗予約の「手戻り・見落とし・二重登録」をローカル中心・外部通信最小設計で解消する 8 つの実機マイクロSaaS・ショーケース群です。
+市場需要の上位5領域（請求書検算・二重送信防止・現場写真動画報告・店舗予約衝突防止・教材研修音声検疫）を含む 9 つの実機マイクロSaaS・ショーケース群です。
 
-## 新着公開：`ReserveGuard PreFlight`（ツール8・同時予約衝突ゼロ＆前日リマインド重複防止）
+## 新着公開：`EduAudio Guard`（ツール9・教材・研修音声 EBU R128＆日本語誤読検疫）
+
+- **3場面切り替え実機デモ**: https://zero-one-lab.ai-hack-lab.workers.dev/ventures/v008_eduaudio_guard/showcase_preview.html
+- **導入出力見本レポート**: https://zero-one-lab.ai-hack-lab.workers.dev/samples/sample_v008_eduaudio.html
+- **技術解説記事（Zenn）**: https://zenn.dev/pikuto/articles/eduaudio-ffmpeg-ebur128-japanese-counter-preflight
+
+## ツール8：`ReserveGuard PreFlight`（同時予約衝突ゼロ＆前日リマインド重複防止）
 
 - **3場面切り替え実機デモ**: https://zero-one-lab.ai-hack-lab.workers.dev/ventures/v007_reserve_guard/showcase_preview.html
 - **導入出力見本レポート**: https://zero-one-lab.ai-hack-lab.workers.dev/samples/sample_v007_reserveguard.html
 - **技術解説記事（Zenn）**: https://zenn.dev/pikuto/articles/reserveguard-sqlite-slot-lock-idempotent-booking
 
-## 主力動画生成：`SiteProof Studio` V2（施工写真→18秒縦型リール＋A4報告書一括生成）
+## 主力動画：`SiteProof Studio` V2（施工写真→18秒縦型リール＋A4報告書一括生成）
 
-- **業種別 1080×1920 音声付きリール 3本（外壁塗装・外構・中古車）**: https://zero-one-lab.ai-hack-lab.workers.dev/samples/sample_v006_siteproof.html
-- **SiteProof Studio プロダクトページ**: https://zero-one-lab.ai-hack-lab.workers.dev/ventures/v006_siteproof_studio/dist/public_landing_preview.html
+- **業種別 1080×1920 音声付きリール 3本**: https://zero-one-lab.ai-hack-lab.workers.dev/samples/sample_v006_siteproof.html
 - **技術解説記事（Zenn）**: https://zenn.dev/pikuto/articles/siteproof-sharp-ffmpeg-local-report-video
 
-## 収録プロダクト一覧（全8種）
+## 収録プロダクト一覧（全9種）
 
 | # | プロダクト名 | 用途 | 公開見本 |
 |---|---|---|---|
@@ -28,3 +33,4 @@
 | 6 | **SyncGuard PreFlight** | スプシ×LINE/メール通知のSHA-256二重送信遮断＆未達再送分離 | `/samples/sample_v005_syncguard.html` |
 | 7 | **SiteProof Studio** | 現場写真4枚→18秒音声付縦型リール・Before/After・A4完了報告 | `/samples/sample_v006_siteproof.html` |
 | 8 | **ReserveGuard PreFlight** | 店舗・サロンの同時予約衝突遮断・1分ロック・リマインド重複抑止 | `/samples/sample_v007_reserveguard.html` |
+| 9 | **EduAudio Guard** | 教材・研修音声の EBU R128 音圧・語尾切れ・日付/助数詞誤読検疫 | `/samples/sample_v008_eduaudio.html` |

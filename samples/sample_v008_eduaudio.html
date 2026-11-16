@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>教材音声ガード EduAudio Guard — 研修・教材ナレーションの音圧ばらつき・語尾切れ・日付や数字の誤読 検疫 出力見本</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+      --ink: #0F172A;
+      --sub: #334155;
+      --line: #CBD5E1;
+      --accent: #1E3A8A;
+      --ok-fg: #065F46;
+      --ok-bg: #ECFDF5;
+      --ng-fg: #9F1239;
+      --ng-bg: #FFF1F2;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--ink);
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+      font-size: 16px; line-height: 1.65; overflow-x: hidden;
+    }
+    a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 28px 20px 56px 20px; }
+    .head {
+      background: var(--card); border: 2px solid var(--accent); border-radius: 8px;
+      padding: 20px 22px; margin-bottom: 24px;
+    }
+    .head h1 { font-size: 24px; margin: 0 0 10px 0; color: var(--ink); line-height: 1.35; }
+    .lead { font-size: 15px; margin: 0 0 12px 0; color: var(--ink); font-weight: 600; }
+    .io-list { margin: 0 0 10px 0; padding-left: 20px; font-size: 14px; color: var(--sub); }
+    .disclosure {
+      margin: 0; padding: 8px 12px; background: #F1F5F9; border-left: 4px solid var(--accent);
+      font-size: 13px; color: var(--ink);
+    }
+    h2 { font-size: 18px; margin: 28px 0 12px 0; color: var(--ink); border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 20px; margin-bottom: 24px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+    .panel h3 { font-size: 16px; margin: 0 0 10px 0; color: var(--ink); }
+    .badge-ok { display: inline-block; padding: 3px 10px; border-radius: 4px; background: var(--ok-bg); color: var(--ok-fg); font-size: 13px; font-weight: 700; }
+    .badge-ng { display: inline-block; padding: 3px 10px; border-radius: 4px; background: var(--ng-bg); color: var(--ng-fg); font-size: 13px; font-weight: 700; }
+    .sample-img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 10px 0; }
+    .caption { font-size: 13px; color: var(--sub); margin: 6px 0 0 0; }
+    .pre-box {
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      background: #F1F5F9; border: 1px solid var(--line); border-radius: 6px;
+      padding: 12px; font-size: 13px; color: var(--ink); margin-top: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; background: var(--card); margin-bottom: 20px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; font-size: 13px; text-align: left; overflow-wrap: anywhere; }
+    th { background: #F1F5F9; color: var(--ink); font-weight: 700; }
+    .boundary {
+      background: #FFFBEB; border: 1px solid #D97706; border-radius: 8px;
+      padding: 16px 20px; margin-bottom: 24px; font-size: 14px; color: #78350F;
+    }
+    .boundary h2 { font-size: 16px; margin: 0 0 8px 0; color: #78350F; border-bottom: none; padding-bottom: 0; }
+    .boundary p { margin: 0 0 8px 0; }
+    
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+    @media print { .inquiry-section { display: none; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="head" id="top-spec">
+      <h1>教材音声ガード EduAudio Guard — 研修・教材ナレーションの音圧ばらつき・語尾切れ・日付や数字の誤読 検疫 出力見本</h1>
+      <p class="lead">研修・eラーニングのナレーション音声を、納品の前にまとめて点検します。章ごとの音の大きさのばらつき、語尾の切れ、音割れ、「8日」「20日」「3階」「KPI」のような読み方が決まっていない箇所を見つけ、基準外の章は理由と直し方つきで止めます。いまお使いの台本の表に合わせて組み込めます。</p>
+      <ul class="io-list">
+        <li><strong>入力（入れるもの）:</strong> 台本の表（スプレッドシートのタブ区切り・カンマ区切り・貼り付けテキスト。全角数字のままでも可）と、章ごとの音量の数値または音声の指定</li>
+        <li><strong>出力（出てくるもの）:</strong> 章ごとの「合格／停止」の判定、停止した理由と直し方、ロット全体の音圧差、読み方を指定した箇所の一覧、ロット登録の変更履歴（改ざんがあれば検知できる形式）</li>
+      </ul>
+      <p class="disclosure">このファイルは提案添付・事前確認用のスタンドアロン出力見本HTMLです（例示データを実際の検品プログラムに通した出力であり、顧客実績ではありません）。実データ1件での無料サンプル検品をご希望の場合は、ページ下部のご相談フォームから依頼文を作成できます。</p>
+    </header>
+
+    <section>
+      <h2>例示データを検品ツールに通した出力見本</h2>
+      
+      <div class="grid-2">
+        <div class="panel">
+          <h3>【音の実測】例示の合成音声 6 本の計測値</h3>
+          <span class="badge-ok">実際に計測した数値（6 本を 803 ミリ秒で計測）</span>
+          <p class="caption">人の声ではなく、音の大きさだけを再現した信号を EBU R128 方式で計測した結果です。</p>
+          <table>
+            <thead><tr><th>例示の章</th><th>音圧（LUFS）</th><th>変動幅（LU）</th><th>最大音量（dBTP）</th><th>末尾の無音（ミリ秒）</th></tr></thead>
+            <tbody><tr><td>第1章（標準音圧）</td><td>-16.0</td><td>0.2</td><td>-10.2</td><td>600</td></tr>
+<tr><td>第2章（標準音圧・やや大きめ）</td><td>-15.3</td><td>0.2</td><td>-9.5</td><td>500</td></tr>
+<tr><td>第3章（標準音圧・やや小さめ）</td><td>-16.9</td><td>0.2</td><td>-11.2</td><td>700</td></tr>
+<tr><td>第4章（音圧不足）</td><td>-28.0</td><td>0.2</td><td>-22.2</td><td>600</td></tr>
+<tr><td>第5章（音割れ）</td><td>-15.9</td><td>0.2</td><td>0.5</td><td>600</td></tr>
+<tr><td>第6章（語尾ブツ切れ）</td><td>-16.0</td><td>0.2</td><td>-10.2</td><td>0</td></tr></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>【日付の誤読を摘出】「8日」は「ようか」か「はちにち」か</h3>
+          <span class="badge-ng">読み指定なし → 停止</span>
+          <p class="caption">台本に読み方の指定がない日付は、ナレーションで読み間違えるリスクがあるため、納品前に止めます。</p>
+          <div class="pre-box">台本: 提出の期限は来月8日です。
+判定: 日付・助数詞の読み方が決まっていない（8日）
+直し方: 台本を「提出の期限は来月8日[8日=ようか]です。」に書き換える
+書き換え後の判定: 合格</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>【低音圧・語尾切れ・音割れ・誤読をまとめて停止】</h3>
+          <span class="badge-ng">4 章のうち 4 章を停止（問題 7 件）</span>
+          <p class="caption">章ごとの音圧差が 12.1 LU あり、上限 2.5 LU を超えています（最小 -28 LUFS＝E02、最大 -15.9 LUFS＝E04）。聞き手が音量つまみを何度も動かすことになります。</p>
+          <div class="pre-box">・E01（音圧 -16.0 LUFS／最大 -10.2 dBTP／末尾の無音 600 ミリ秒）→ 停止: 日付・助数詞の読み方が決まっていない（1日）
+・E02（音圧 -28.0 LUFS／最大 -22.2 dBTP／末尾の無音 600 ミリ秒）→ 停止: 日付・助数詞の読み方が決まっていない（20個）、音圧が目標から外れている
+・E03（音圧 -16.0 LUFS／最大 -10.2 dBTP／末尾の無音 0 ミリ秒）→ 停止: 英字略語の読み仮名が未登録（KPI）、語尾が切れている恐れ（末尾の無音が短い）
+・E04（音圧 -15.9 LUFS／最大 0.5 dBTP／末尾の無音 600 ミリ秒）→ 停止: 最大音量が高すぎる（音割れの恐れ）</div>
+        </div>
+        <div class="panel">
+          <h3>【正常ロット】読み指定済み・音圧そろい</h3>
+          <span class="badge-ok">3 章すべて合格 ／ 音圧差 1.6 LU（上限 2.5 LU）</span>
+          <p class="caption">同じロットをもう一度投入すると、識別キー（SHA-256）が同じため重複として登録せず、台帳には 1 件のままです。</p>
+          <div class="pre-box">1 回目の登録: 新規に登録
+2 回目の登録: 重複を抑止（登録しない）
+識別キー（先頭16文字）: 770db3f7ebce5527…</div>
+        </div>
+      </div>
+
+      <h3>貼り付けたままの表記ゆれを読み取る（全角数字・全角英字・全角スペース・タブ区切り）</h3>
+      <table>
+        <thead><tr><th>章</th><th>貼り付けたままの台本</th><th>整えた後</th></tr></thead>
+        <tbody>
+          <tr><td>R01</td><td>毎月２０日までに、Ｂ２Ｂ案件の　ＫＰＩを　報告します。</td><td>毎月20日までに、B2B案件の KPIを 報告します。</td></tr>
+<tr><td>R02</td><td>研修の資料は［ＰＤＦ=ピーディーエフ］で配布し、受講後は８日以内に　ＳＬＡの確認を行います。</td><td>研修の資料は[PDF=ピーディーエフ]で配布し、受講後は8日以内に SLAの確認を行います。</td></tr>
+<tr><td>R03</td><td>第１０章のまとめです。目標の１０％を超えた部署は３階の会議室に集まってください。</td><td>第10章のまとめです。目標の10%を超えた部署は3階の会議室に集まってください。</td></tr>
+        </tbody>
+      </table>
+      <p class="caption">読み方は別に用意した辞書（10 語）で指定すると、3 章すべて合格。辞書なしで同じ台本を点検すると、読みが決まっていない箇所が 7 か所見つかり、停止します。</p>
+
+      <h3>変更履歴（改ざん検知つき）</h3>
+      <div class="pre-box">・ロットを登録
+・ロットを登録
+・ロットを登録
+・同じロットの再投入を重複として抑止
+履歴の連鎖検証: 改ざんなし（全件の整合を確認）</div>
+    
+    </section>
+
+    <section class="boundary">
+      <h2>未対応・手動確認が必要な範囲 ＆ 停止したときの次の手</h2>
+      <p><strong>人間による最終確認が必要な範囲:</strong> 音声の中で実際に話されている言葉は聞き取りません。台本の文字と、音の大きさ・末尾の無音などの数値だけで判定しますので、読み上げが指定どおりかは人間が最終確認してください。読み方の検査は、日付（1〜10日・14日・20日・24日）、助数詞（本・匹・階・個・回・件・%）、英字略語（大文字2〜8文字）が対象で、小数や難読語・固有名詞は対象外です。音声ファイルの取り込みは、導入時にお使いの環境へ合わせて組み込みます。</p>
+      <p><strong>入力不備・判定不能のとき:</strong> 基準外の章（音圧の過不足・章ごとの音圧差・語尾切れ・音割れ・読み方が決まっていない日付や略語）は合格として登録せず、理由と直し方を表示して止めます。AI補助を有効にして通信できないときや、音の計測が使えないときは、推測で合格にせず「判定不能」として止まります。</p>
+    </section>
+
+    <section>
+      <h2>検証条件・測定証跡（再現条件とサンプル件数）</h2>
+      <table>
+        <thead>
+          <tr><th>項目・指標</th><th>本見本での実測値</th><th>測定日・環境・条件・件数 (n)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>例示の合成音声の音響計測</td><td>6 本を 803 ミリ秒で計測（音圧 -28.0〜-15.3 LUFS）</td><td>測定日: 2026-11-17 / 環境: Node.js v24.14.0・手元PCでのローカル実行（音の計測は ffmpeg の EBU R128 計測） / 各10秒・48 kHz・モノラルの合成信号 (n=6本)</td></tr>
+<tr><td>4 章の注入欠陥ロットの停止</td><td>停止 4章・問題 7件・音圧差 12.1 LU（1 ミリ秒）</td><td>低音圧・語尾切れ・音割れ・日付と略語の読み指定なしを含む架空の台本4行 (n=4行)</td></tr>
+<tr><td>日付の読み指定なしの摘出と、指定後の通過</td><td>「8日」を停止 → 読み指定の追記後は合格</td><td>台本1行での実行 (n=1行)</td></tr>
+<tr><td>表記ゆれ（全角・タブ貼り付け）の読み取り</td><td>3 章すべて合格（辞書なしでは停止）</td><td>全角数字・全角英字・全角スペース・全角括弧を含む台本3行 (n=3行)</td></tr>
+<tr><td>同じロットの再投入の重複抑止</td><td>2 回目は重複として登録せず（台帳 1 件）</td><td>台本・音声・辞書が同一のロットを2回投入 (n=3章)</td></tr>
+<tr><td>変更履歴の整合</td><td>改ざんなし</td><td>履歴4件のハッシュ連鎖を再計算して照合</td></tr>
+        </tbody>
+      </table>
+      <p class="caption">通信先: 標準構成は外部通信ゼロ（お手元の環境内で音の計測と台本の点検を行い、同じ入力には毎回同じ判定）。AI補助オプションを有効にした場合のみ指定のAPIへ通信し、通信できないときは合格にせず「判定不能」で安全に停止します。この見本の数値はすべて手元PCでの実測結果です。台本や音声は外部へ送りません。</p>
+    </section>
+
+    
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">個別検品パック・専用カスタマイズのご相談フォーム</h2>
+      <p class="inquiry-lead">「手元のデータ1件で無料見本を作ってほしい」「自社の帳票・制作フローに合わせて導入したい」という場合は、下のフォームから送信（または依頼文をコピーしてメッセージ欄へ貼り付け）してください。決済情報の入力は不要です。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="実データ1件での無料検品サンプル作成希望">実データ1件での無料検品サンプル作成希望</option><option value="単発の検品パック依頼（画像・スライド等）">単発の検品パック依頼（画像・スライド等）</option><option value="自社仕様へのカスタマイズ・導入見積り相談">自社仕様へのカスタマイズ・導入見積り相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: お手元のデータ3〜5件について、公開・振込前の無料サンプル検品を希望します。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#top-spec" class="inquiry-alt-link">上の見本に戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "教材音声ガード" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+  </main>
+</body>
+</html>

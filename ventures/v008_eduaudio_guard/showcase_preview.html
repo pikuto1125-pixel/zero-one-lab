@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>研修・教材の音声を、納品の前に点検して止める — 教材音声ガード</title>
+<style>
+:root{--paper:#f6f8fa;--ink:#16202a;--muted:#4a5a68;--accent:#0f5c6e;--line:#cfd8df;--stop:#8a1c14;--tint:#e3f1f4;--stoptint:#fbe9e7}
+*{box-sizing:border-box}
+html{font-family:"BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif;background:var(--paper);color:var(--ink);line-height:1.7}
+body{margin:0;padding:0 20px 64px;background:var(--paper);color:var(--ink);text-spacing-trim:space-all}
+b,strong{font-weight:700}
+.meta,p,li,td,th,footer,code{overflow-wrap:anywhere}
+code{font-family:Consolas,"BIZ UDGothic",monospace;font-size:14px;line-height:1.5;font-weight:400}
+main{max-width:920px;margin:0 auto}
+header{padding:48px 0 16px}
+h1{font-size:32px;line-height:1.3;font-weight:700;margin:0 0 12px}
+h2{font-size:22px;line-height:1.4;font-weight:700;margin:40px 0 12px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+h3{font-size:18px;line-height:1.5;font-weight:700;margin:20px 0 8px}
+p,li,td,a,label,span{font-size:16px;line-height:1.7;font-weight:400}
+th,small,.meta{font-size:14px;line-height:1.5}
+th{font-weight:700;text-align:left}
+small,.meta{font-weight:400;color:var(--muted)}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.disclosure{border:1px solid var(--ink);background:#fff;padding:12px 16px;margin:16px 0}
+.cta-btn{display:inline-block;background:var(--accent);color:#fff;padding:12px 24px;font-weight:700;text-decoration:none;margin:8px 8px 0 0}
+.cta-btn.sub{background:#fff;color:var(--accent);border:2px solid var(--accent)}
+.cta-btn:hover{background:var(--ink);color:#fff}
+table{width:100%;border-collapse:collapse;margin:8px 0;background:#fff}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.num{font-variant-numeric:tabular-nums}
+ul{margin:4px 0;padding-left:20px}
+.badge{display:inline-block;padding:1px 8px;background:var(--tint);color:#0b4756;font-size:14px;line-height:1.5;font-weight:700;border:1px solid var(--accent)}
+.badge.stop{background:var(--stoptint);color:var(--stop);border-color:var(--stop)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.presets[hidden]{display:none}
+button{font:inherit;font-size:16px;font-weight:700;background:#fff;color:var(--ink);border:2px solid var(--ink);padding:10px 16px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+#demo-panel{background:#fff;border:1px solid var(--line);padding:12px 16px;min-height:60px}
+#demo-panel table{margin:8px 0}
+footer{margin-top:48px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){table{display:block;overflow-x:auto}}
+@media print{body{background:#fff}.cta-btn,button{display:none}table{display:table}}
+
+.inquiry-section {
+  background: #0F172A;
+  color: #F8FAFC;
+  border-radius: 8px;
+  padding: 28px 24px;
+  margin-top: 28px;
+  border-top: 4px solid #D97706;
+}
+.inquiry-section h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  border: none;
+  padding: 0;
+}
+.inquiry-section .inquiry-lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #E2E8F0;
+  margin: 0 0 18px 0;
+  max-width: 780px;
+}
+.inquiry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.inquiry-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+}
+.inquiry-input,
+.inquiry-select,
+.inquiry-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.inquiry-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.inquiry-submit-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.inquiry-submit-btn:hover {
+  background: #92400E;
+}
+.inquiry-alt-link {
+  display: inline-block;
+  padding: 11px 18px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #94A3B8;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.inquiry-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #6EE7B7;
+  font-size: 14px;
+  line-height: 1.6;
+  display: none;
+}
+.inquiry-copy-area {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 13px;
+}
+@media print {
+  .inquiry-section {
+    display: none;
+  }
+}
+
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="meta">Zero-One Venture Lab ／ eラーニング・研修動画・社内マニュアル向け 教材音声ガード</p>
+  <h1>研修・教材の音声を、納品の前に点検して止める</h1>
+  <p>ナレーション音声は、章ごとに音の大きさがばらついたり、語尾が途中で切れたり、「8日」を「ようか」と読むのか「はちにち」と読むのかが決まっていなかったりして、納品後に直しが出がちです。台本と音声をロットごとにまとめて点検し、基準外の章は理由と直し方つきで自動的に止めます。</p>
+  <p class="disclosure">点検はお手元の環境の中だけで行い、台本や音声を外部へ送ることはありません。</p>
+</header>
+
+<h2 id="demo">3つの場面を切り替えて試す</h2>
+<p>ボタンで場面を切り替えると、判定結果が入れ替わります。表示は 2026-11-17 に実際の計測と判定を行った結果です（架空の研修台本と例示の合成音声で、実在の教材ではありません）。</p>
+<div class="presets" id="preset-bar" hidden>
+  <button type="button" data-preset="normal" aria-pressed="true">辞書指定済みの正常ロット</button>
+  <button type="button" data-preset="dirty" aria-pressed="false">表記ゆれ・タブ貼り付け</button>
+  <button type="button" data-preset="stop" aria-pressed="false">低音圧・語尾切れ・日付誤読を自動停止</button>
+</div>
+<div id="demo-panel" aria-live="polite">
+<p><span class="badge">全章が基準内（納品できます）</span> 3 章の台本には、日付・助数詞・英字略語の読みがすべて指定されており、音圧もそろっています。</p>
+<table>
+<tr><th>章</th><th>台本（読み指定つき）</th><th>音圧（LUFS）</th><th>最大音量（dBTP）</th><th>末尾の無音（ミリ秒）</th><th>判定</th></tr>
+<tr><td>R01</td><td>コンプライアンス研修 第1章。新しい行動規範は4月[1日=ついたち]から適用します。社外秘の資料は[3階=さんがい]の書庫に保管してください。</td><td class="num">-16.0</td><td class="num">-10.2</td><td class="num">600</td><td><span class="badge">合格</span></td></tr>
+<tr><td>R02</td><td>新卒ビジネス敬語研修 第2章。お客様への連絡は受付から[10日=とおか]以内に行い、[SLA=エスエルエー]を守ることが信頼につながります。</td><td class="num">-15.3</td><td class="num">-9.5</td><td class="num">500</td><td><span class="badge">合格</span></td></tr>
+<tr><td>R03</td><td>社内マニュアル 第3章。月次の[KPI=ケーピーアイ]は[PDF=ピーディーエフ]で共有し、[B2B=ビーツービー]案件は別表にまとめます。</td><td class="num">-16.9</td><td class="num">-11.2</td><td class="num">700</td><td><span class="badge">合格</span></td></tr>
+</table>
+<p>章ごとの音圧差は <b>1.6 LU</b>（最小 -16.9 〜 最大 -15.3 LUFS）。上限は 2.5 LU です。</p>
+<p>同じロットをもう一度投入すると、識別キー（SHA-256）が一致するため<b>重複として登録せず</b>、台帳には 1 件のままです（登録状態: 重複を抑止）。</p>
+</div>
+
+<h2>実測した音の数値</h2>
+<p>例示の合成音声（人の声ではなく、音の大きさだけを再現した信号）を実際に計測した数値です。測定日 2026-11-17、EBU R128 方式（音圧＝LUFS、変動幅＝LRA、最大音量＝トゥルーピーク dBTP）で計測し、末尾の無音は 50 dB 以下が続いた長さを測っています。</p>
+<table>
+<tr><th>例示の章</th><th>意図した状態</th><th>音圧（LUFS）</th><th>変動幅（LU）</th><th>最大音量（dBTP）</th><th>末尾の無音（ミリ秒）</th><th>長さ（秒）</th></tr>
+<tr><td>第1章（標準音圧）</td><td>正常: 約 -16 LUFS・語尾の無音 600 ミリ秒</td><td class="num">-16.0</td><td class="num">0.2</td><td class="num">-10.2</td><td class="num">600</td><td class="num">10.0</td></tr>
+<tr><td>第2章（標準音圧・やや大きめ）</td><td>正常: 約 -15 LUFS・語尾の無音 500 ミリ秒</td><td class="num">-15.3</td><td class="num">0.2</td><td class="num">-9.5</td><td class="num">500</td><td class="num">10.0</td></tr>
+<tr><td>第3章（標準音圧・やや小さめ）</td><td>正常: 約 -17 LUFS・語尾の無音 700 ミリ秒</td><td class="num">-16.9</td><td class="num">0.2</td><td class="num">-11.2</td><td class="num">700</td><td class="num">10.0</td></tr>
+<tr><td>第4章（音圧不足）</td><td>欠陥: 約 -28 LUFS（他章より 12 LU 小さい）</td><td class="num">-28.0</td><td class="num">0.2</td><td class="num">-22.2</td><td class="num">600</td><td class="num">10.0</td></tr>
+<tr><td>第5章（音割れ）</td><td>欠陥: トゥルーピーク +0.5 dBTP 前後</td><td class="num">-15.9</td><td class="num">0.2</td><td class="num">0.5</td><td class="num">600</td><td class="num">10.0</td></tr>
+<tr><td>第6章（語尾ブツ切れ）</td><td>欠陥: 末尾の無音 0 ミリ秒（最後の音が切れている）</td><td class="num">-16.0</td><td class="num">0.2</td><td class="num">-10.2</td><td class="num">0</td><td class="num">10.0</td></tr>
+</table>
+
+<h2>基準外の章を止めた実例</h2>
+<p><span class="badge stop">基準外の章を検知して自動停止</span> 4 章のうち <b>4 章</b>が基準外で、合計 <b>7 件</b>の問題を理由つきで止めました（数値の単位は 音圧＝LUFS、最大音量＝dBTP、末尾の無音＝ミリ秒）。</p>
+<table>
+<tr><th>章</th><th>台本</th><th>音圧 ／ 最大音量 ／ 末尾の無音</th><th>判定</th><th>停止の理由と直し方</th></tr>
+<tr><td>E01</td><td>新入社員研修の初日は4月1日です。持ち物は別紙で確認してください。</td><td class="num">-16.0 ／ -10.2 ／ 600</td><td><span class="badge stop">停止</span></td><td><ul><li>日付・助数詞の読み方が決まっていない（1日）<br><small>直し方: 台本に読みを書き足す（例: 8日の直後に [8日=ようか]）。毎回使う読みは辞書に登録する。</small></li></ul></td></tr>
+<tr><td>E02</td><td>情報管理の注意点を20個説明します。</td><td class="num">-28.0 ／ -22.2 ／ 600</td><td><span class="badge stop">停止</span></td><td><ul><li>日付・助数詞の読み方が決まっていない（20個）<br><small>直し方: 台本に読みを書き足す（例: 8日の直後に [8日=ようか]）。毎回使う読みは辞書に登録する。</small></li><li>音圧が目標から外れている<br><small>直し方: 目標 -16 LUFS に合わせて音量を調整し、書き出し直す。</small></li></ul></td></tr>
+<tr><td>E03</td><td>最後にKPIの確認です。本日はありがとうございました。</td><td class="num">-16.0 ／ -10.2 ／ 0</td><td><span class="badge stop">停止</span></td><td><ul><li>英字略語の読み仮名が未登録（KPI）<br><small>直し方: 台本に読み仮名を書き足す（例: [KPI=ケーピーアイ]）。または辞書に登録する。</small></li><li>語尾が切れている恐れ（末尾の無音が短い）<br><small>直し方: 末尾に 0.3 秒以上の無音を足して書き出し直す（語尾が欠けていないかも聞いて確認）。</small></li></ul></td></tr>
+<tr><td>E04</td><td>以上で第5章を終わります。</td><td class="num">-15.9 ／ 0.5 ／ 600</td><td><span class="badge stop">停止</span></td><td><ul><li>最大音量が高すぎる（音割れの恐れ）<br><small>直し方: 音量を下げるか、最大音量を -1 dBTP 以下に抑えて書き出し直す。</small></li></ul></td></tr>
+</table>
+<p><b>ロット全体:</b> 章ごとの音圧差が 12.1 LU あり、上限 2.5 LU を超えています（最小 -28 LUFS＝E02、最大 -15.9 LUFS＝E04）。聞き手が音量つまみを何度も動かすことになります。</p>
+
+<h2>変更証跡台帳（ハッシュ連鎖）</h2>
+<p>ロットの登録と重複の抑止は、ひとつ前の記録のハッシュを含めて連鎖する変更証跡として残ります。連鎖の検証結果: <span class="badge">改ざんなし</span>（全 4 件を表示）</p>
+<table>
+<tr><th>番号</th><th>出来事</th><th>ロット識別キー（先頭16桁）</th><th>この記録のハッシュ（先頭16桁）</th><th>ひとつ前のハッシュ</th></tr>
+<tr><td class="num">1</td><td>ロットを登録</td><td><code>770db3f7ebce5527</code></td><td><code>11b2f749c86c084b</code></td><td><code>0000000000000000</code></td></tr>
+<tr><td class="num">2</td><td>同じロットの再投入を重複として抑止</td><td><code>770db3f7ebce5527</code></td><td><code>196e72504c310d01</code></td><td><code>11b2f749c86c084b</code></td></tr>
+<tr><td class="num">3</td><td>ロットを登録</td><td><code>b140f1c9ea7d0873</code></td><td><code>28b125cf38e792a2</code></td><td><code>196e72504c310d01</code></td></tr>
+<tr><td class="num">4</td><td>ロットを登録</td><td><code>e952513f0dcc7f0a</code></td><td><code>8b94ed889b9c2d83</code></td><td><code>28b125cf38e792a2</code></td></tr>
+</table>
+
+<h2>止める7つの検査</h2>
+<table>
+<tr><th>検査</th><th>内容</th></tr>
+<tr><td>音圧の不足・過大</td><td>章ごとの音圧（Integrated Loudness）が目標 -16 LUFS の ±2 LU を外れている章を止めます。</td></tr>
+<tr><td>章ごとの音圧差</td><td>ロット内で最大と最小の差が 2.5 LU を超えると、ロット全体を止めます。</td></tr>
+<tr><td>語尾の切れ</td><td>末尾の無音が 80 ミリ秒未満の章は、語尾がブツ切れている恐れがあるため止めます。</td></tr>
+<tr><td>音割れ</td><td>最大音量（トゥルーピーク）が -1 dBTP を超える章を止めます。</td></tr>
+<tr><td>日付・助数詞の読み</td><td>「8日」「20日」「3階」「10%」のように読みが複数ある表記に、読み指定（[8日=ようか] など）か辞書の登録がなければ止めます。</td></tr>
+<tr><td>英字略語の読み</td><td>KPI・B2B・SLA・PDF などの英字略語に、読み仮名の指定がなければ止めます。</td></tr>
+<tr><td>同じロットの再投入</td><td>同じ台本・音声・辞書の組み合わせは、識別キー（SHA-256）で 1 件にまとめます。</td></tr>
+</table>
+<p>AI補助を有効にしても通信できない時は「判定不能」として止まり、推測で合格にはしません。</p>
+
+<h2>データの取り扱いと通信</h2>
+<p class="disclosure">標準構成はお手元の環境内（標準処理＋ffmpeg 音響計測）で完結し、外部通信は一切行いません。AI補助オプション有効時のみ指定APIへ通信し、通信不能時は判定不能として安全停止します。</p>
+<p>点検に使えるのは、用意された音声ID、または章ごとに測定した数値の列です。お手元のファイルの場所を渡して読み込ませることはできません。</p>
+
+<h2>検証条件・技術仕様</h2>
+<table>
+<tr><th>項目</th><th>内容</th><th>測定日・条件</th></tr>
+<tr><td>音響の計測</td><td>音圧（Integrated Loudness）・音圧の変動幅（Loudness Range）・最大音量（True Peak）を EBU R128 方式で計測し、末尾の無音と最大・平均音量を併せて計測</td><td>2026-11-17 ／ 例示の合成音声 6 本（各 10 秒・48 kHz・モノラル）</td></tr>
+<tr><td>この画面の数値</td><td>台本 10 行・ロット 3 種を実際に判定</td><td>2026-11-17 ／ 架空の台本 ／ 決定論モード（同じ入力には同じ判定）</td></tr>
+<tr><td>基準値</td><td>目標音圧 -16 LUFS（±2 LU）・ロット内の差 2.5 LU 以内・最大音量 -1 dBTP 以下・末尾の無音 80 ミリ秒以上（お客様の納品先の基準に合わせて変更できます）</td><td>1 回に点検できるのは 200 行まで</td></tr>
+</table>
+
+<h2>未対応の範囲と、停止したときの次の手</h2>
+<ul>
+<li>音声の中で実際に話されている言葉は聞き取りません。台本の文字と、音の大きさ・末尾の無音などの数値だけで判定します。実際の読み上げが指定どおりかは、人間が最終確認してください。</li>
+<li>読みの検査は、日付（1〜10日・14日・20日・24日）、助数詞（本・匹・階・個・回・件・%）、英字略語（大文字 2〜8 文字）が対象です。小数（2.5%など）や、その他の難読語・固有名詞は対象外です。</li>
+<li>点検に使える音声は、用意された音声IDまたは測定済みの数値です。音声ファイルの取り込みは、導入時に環境へ合わせて組み込みます。</li>
+<li>停止した章は台帳に合格として登録しません。台本への読み指定の追記または音声の書き出し直しのあと、もう一度点検してください。</li>
+</ul>
+
+<footer>
+
+    <section id="inquiry-form" class="inquiry-section" aria-labelledby="inquiry-heading">
+      <h2 id="inquiry-heading">御社の教材音声と台本で無料診断・試運転を相談する</h2>
+      <p class="inquiry-lead">お使いの台本の表（スプレッドシートの出力）と、章ごとの音量の数値に合わせた試運転が可能です。ダミー値の台本 1 件から、実際の判定結果の見本をお作りします。音声ファイルそのものをお預かりする必要はなく、決済情報の入力も不要です。</p>
+      <form id="zol-inquiry-form">
+        <div class="inquiry-grid">
+          <div class="inquiry-field">
+            <label for="inq-org">会社名・屋号・ご担当者名（任意）</label>
+            <input id="inq-org" name="orgName" type="text" class="inquiry-input" placeholder="例: 株式会社サンプル 佐藤" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-reply">ご希望の返信先（メールまたはチャット名・任意）</label>
+            <input id="inq-reply" name="replyTo" type="text" class="inquiry-input" placeholder="例: ココナラ / Lancers メッセージ経由" />
+          </div>
+          <div class="inquiry-field">
+            <label for="inq-type">ご希望のメニュー</label>
+            <select id="inq-type" name="inquiryType" class="inquiry-select">
+              <option value="ダミー値の台本 1 件での無料診断・見本作成の希望">ダミー値の台本 1 件での無料診断・見本作成の希望</option><option value="自社の台本の表と音量の数値に合わせた試運転の相談">自社の台本の表と音量の数値に合わせた試運転の相談</option><option value="導入・カスタマイズのお見積り相談">導入・カスタマイズのお見積り相談</option>
+            </select>
+          </div>
+        </div>
+        <div class="inquiry-field">
+          <label for="inq-detail">対象データの種類・枚数・お困りごと（必須）</label>
+          <textarea id="inq-detail" name="detail" class="inquiry-textarea" required placeholder="例: eラーニング教材を月 20 章ずつ制作しています。章ごとの音量のばらつきと、日付や数字の読み間違いを納品前に止める試運転を希望します。"></textarea>
+        </div>
+        <div class="inquiry-actions">
+          <button type="submit" class="inquiry-submit-btn">相談リクエストを記録・依頼文を作成する</button>
+          <a href="#inquiry-form" id="zol-inquiry-focus-link" class="inquiry-alt-link">ご相談内容の入力欄へ移動</a>
+          <a href="#demo" class="inquiry-alt-link">上の 3 つの場面へ戻る</a>
+        </div>
+        <div id="inq-feedback" class="inquiry-feedback" aria-live="polite"></div>
+      </form>
+      <script>
+        (function(){
+          var form = document.getElementById('zol-inquiry-form');
+          var fb = document.getElementById('inq-feedback');
+          var focusLink = document.getElementById('zol-inquiry-focus-link');
+          if (focusLink) {
+            focusLink.addEventListener('click', function(ev) {
+              var detailEl = document.getElementById('inq-detail');
+              if (detailEl) { setTimeout(function(){ detailEl.focus(); }, 50); }
+            });
+          }
+          var memKey = 'ck_mem_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          function getClientKey() {
+            try {
+              var k = localStorage.getItem('zol_client_key');
+              if (!k) {
+                k = 'ck_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+                localStorage.setItem('zol_client_key', k);
+              }
+              return k;
+            } catch (e) { return memKey; }
+          }
+          window.__zolGetClientKey = getClientKey;
+          if (!form || !fb) return;
+          form.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var org = document.getElementById('inq-org').value.trim();
+            var rep = document.getElementById('inq-reply').value.trim();
+            var typ = document.getElementById('inq-type').value;
+            var det = document.getElementById('inq-detail').value.trim();
+            if (!det) return;
+            var formatted = '【' + "教材音声ガード" + ' ご相談シート控え】\n' +
+              '・ご希望内容: ' + typ + '\n' +
+              (org ? '・お名前/御社名: ' + org + '\n' : '') +
+              (rep ? '・ご連絡先: ' + rep + '\n' : '') +
+              '・詳細: ' + det;
+            fb.style.display = 'block';
+            try {
+              var res = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-client-key': getClientKey() },
+                body: JSON.stringify({ orgName: org, replyTo: rep, inquiryType: typ, detail: det })
+              });
+              var data = await res.json();
+              if (res.ok && data && data.ok) {
+                fb.innerHTML = '<strong>' + data.message + '</strong><br/>そのままチャット等へ貼り付けられる「ご相談シート控え」も生成しました：<textarea class="inquiry-copy-area" readonly>' +
+                  formatted.replace(/</g, '&lt;') + '</textarea>';
+                return;
+              }
+            } catch (e) {}
+            var copied = false;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(formatted);
+                copied = true;
+              }
+            } catch (e) {}
+            fb.innerHTML = '<strong>' + (copied ? 'ご相談シート控えを作成し、クリップボードへコピーしました。' : 'ご相談シート控えを作成しました（下の枠内を選択してコピーしてください）。') + '</strong><br/>このまま出品ページの「見積り・カスタマイズ相談」またはメッセージ欄に貼り付けてお送りください：<textarea class="inquiry-copy-area" readonly>' +
+              formatted.replace(/</g, '&lt;') + '</textarea>';
+          });
+        })();
+      </script>
+    </section>
+  
+</footer>
+</main>
+<script type="application/json" id="preset-data">{"normal":"\u003cp>\u003cspan class=\"badge\">全章が基準内（納品できます）\u003c/span> 3 章の台本には、日付・助数詞・英字略語の読みがすべて指定されており、音圧もそろっています。\u003c/p>\n\u003ctable>\n\u003ctr>\u003cth>章\u003c/th>\u003cth>台本（読み指定つき）\u003c/th>\u003cth>音圧（LUFS）\u003c/th>\u003cth>最大音量（dBTP）\u003c/th>\u003cth>末尾の無音（ミリ秒）\u003c/th>\u003cth>判定\u003c/th>\u003c/tr>\n\u003ctr>\u003ctd>R01\u003c/td>\u003ctd>コンプライアンス研修 第1章。新しい行動規範は4月[1日=ついたち]から適用します。社外秘の資料は[3階=さんがい]の書庫に保管してください。\u003c/td>\u003ctd class=\"num\">-16.0\u003c/td>\u003ctd class=\"num\">-10.2\u003c/td>\u003ctd class=\"num\">600\u003c/td>\u003ctd>\u003cspan class=\"badge\">合格\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>R02\u003c/td>\u003ctd>新卒ビジネス敬語研修 第2章。お客様への連絡は受付から[10日=とおか]以内に行い、[SLA=エスエルエー]を守ることが信頼につながります。\u003c/td>\u003ctd class=\"num\">-15.3\u003c/td>\u003ctd class=\"num\">-9.5\u003c/td>\u003ctd class=\"num\">500\u003c/td>\u003ctd>\u003cspan class=\"badge\">合格\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>R03\u003c/td>\u003ctd>社内マニュアル 第3章。月次の[KPI=ケーピーアイ]は[PDF=ピーディーエフ]で共有し、[B2B=ビーツービー]案件は別表にまとめます。\u003c/td>\u003ctd class=\"num\">-16.9\u003c/td>\u003ctd class=\"num\">-11.2\u003c/td>\u003ctd class=\"num\">700\u003c/td>\u003ctd>\u003cspan class=\"badge\">合格\u003c/span>\u003c/td>\u003c/tr>\n\u003c/table>\n\u003cp>章ごとの音圧差は \u003cb>1.6 LU\u003c/b>（最小 -16.9 〜 最大 -15.3 LUFS）。上限は 2.5 LU です。\u003c/p>\n\u003cp>同じロットをもう一度投入すると、識別キー（SHA-256）が一致するため\u003cb>重複として登録せず\u003c/b>、台帳には 1 件のままです（登録状態: 重複を抑止）。\u003c/p>","dirty":"\u003cp>全角の数字・英字・スペースが混ざったタブ区切りの貼り付けを、そのまま読み取って整えます。読み方は別に用意した辞書（10 語）で指定でき、台本の中の \u003cb>[語=読み]\u003c/b> の指定も使えます。\u003c/p>\n\u003ctable>\n\u003ctr>\u003cth>章\u003c/th>\u003cth>貼り付けたままの台本\u003c/th>\u003cth>整えた後\u003c/th>\u003cth>確認できた読み\u003c/th>\u003cth>判定\u003c/th>\u003c/tr>\n\u003ctr>\u003ctd>R01\u003c/td>\u003ctd>毎月２０日までに、Ｂ２Ｂ案件の　ＫＰＩを　報告します。\u003c/td>\u003ctd>毎月20日までに、B2B案件の KPIを 報告します。\u003c/td>\u003ctd>20日→はつか ／ B2B→ビーツービー ／ KPI→ケーピーアイ\u003c/td>\u003ctd>\u003cspan class=\"badge\">合格\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>R02\u003c/td>\u003ctd>研修の資料は［ＰＤＦ=ピーディーエフ］で配布し、受講後は８日以内に　ＳＬＡの確認を行います。\u003c/td>\u003ctd>研修の資料は[PDF=ピーディーエフ]で配布し、受講後は8日以内に SLAの確認を行います。\u003c/td>\u003ctd>8日→ようか ／ SLA→エスエルエー\u003c/td>\u003ctd>\u003cspan class=\"badge\">合格\u003c/span>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>R03\u003c/td>\u003ctd>第１０章のまとめです。目標の１０％を超えた部署は３階の会議室に集まってください。\u003c/td>\u003ctd>第10章のまとめです。目標の10%を超えた部署は3階の会議室に集まってください。\u003c/td>\u003ctd>10%→じゅっパーセント ／ 3階→さんがい\u003c/td>\u003ctd>\u003cspan class=\"badge\">合格\u003c/span>\u003c/td>\u003c/tr>\n\u003c/table>\n\u003cp>同じ台本を辞書なしで点検すると、読みが決まっていない箇所が \u003cb>7 か所\u003c/b>見つかり、停止します。\u003c/p>","stop":"\u003cp>\u003cspan class=\"badge stop\">基準外の章を検知して自動停止\u003c/span> 4 章のうち \u003cb>4 章\u003c/b>が基準外で、合計 \u003cb>7 件\u003c/b>の問題を理由つきで止めました（数値の単位は 音圧＝LUFS、最大音量＝dBTP、末尾の無音＝ミリ秒）。\u003c/p>\n\u003ctable>\n\u003ctr>\u003cth>章\u003c/th>\u003cth>台本\u003c/th>\u003cth>音圧 ／ 最大音量 ／ 末尾の無音\u003c/th>\u003cth>判定\u003c/th>\u003cth>停止の理由と直し方\u003c/th>\u003c/tr>\n\u003ctr>\u003ctd>E01\u003c/td>\u003ctd>新入社員研修の初日は4月1日です。持ち物は別紙で確認してください。\u003c/td>\u003ctd class=\"num\">-16.0 ／ -10.2 ／ 600\u003c/td>\u003ctd>\u003cspan class=\"badge stop\">停止\u003c/span>\u003c/td>\u003ctd>\u003cul>\u003cli>日付・助数詞の読み方が決まっていない（1日）\u003cbr>\u003csmall>直し方: 台本に読みを書き足す（例: 8日の直後に [8日=ようか]）。毎回使う読みは辞書に登録する。\u003c/small>\u003c/li>\u003c/ul>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>E02\u003c/td>\u003ctd>情報管理の注意点を20個説明します。\u003c/td>\u003ctd class=\"num\">-28.0 ／ -22.2 ／ 600\u003c/td>\u003ctd>\u003cspan class=\"badge stop\">停止\u003c/span>\u003c/td>\u003ctd>\u003cul>\u003cli>日付・助数詞の読み方が決まっていない（20個）\u003cbr>\u003csmall>直し方: 台本に読みを書き足す（例: 8日の直後に [8日=ようか]）。毎回使う読みは辞書に登録する。\u003c/small>\u003c/li>\u003cli>音圧が目標から外れている\u003cbr>\u003csmall>直し方: 目標 -16 LUFS に合わせて音量を調整し、書き出し直す。\u003c/small>\u003c/li>\u003c/ul>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>E03\u003c/td>\u003ctd>最後にKPIの確認です。本日はありがとうございました。\u003c/td>\u003ctd class=\"num\">-16.0 ／ -10.2 ／ 0\u003c/td>\u003ctd>\u003cspan class=\"badge stop\">停止\u003c/span>\u003c/td>\u003ctd>\u003cul>\u003cli>英字略語の読み仮名が未登録（KPI）\u003cbr>\u003csmall>直し方: 台本に読み仮名を書き足す（例: [KPI=ケーピーアイ]）。または辞書に登録する。\u003c/small>\u003c/li>\u003cli>語尾が切れている恐れ（末尾の無音が短い）\u003cbr>\u003csmall>直し方: 末尾に 0.3 秒以上の無音を足して書き出し直す（語尾が欠けていないかも聞いて確認）。\u003c/small>\u003c/li>\u003c/ul>\u003c/td>\u003c/tr>\n\u003ctr>\u003ctd>E04\u003c/td>\u003ctd>以上で第5章を終わります。\u003c/td>\u003ctd class=\"num\">-15.9 ／ 0.5 ／ 600\u003c/td>\u003ctd>\u003cspan class=\"badge stop\">停止\u003c/span>\u003c/td>\u003ctd>\u003cul>\u003cli>最大音量が高すぎる（音割れの恐れ）\u003cbr>\u003csmall>直し方: 音量を下げるか、最大音量を -1 dBTP 以下に抑えて書き出し直す。\u003c/small>\u003c/li>\u003c/ul>\u003c/td>\u003c/tr>\n\u003c/table>\n\u003cp>\u003cb>ロット全体:\u003c/b> 章ごとの音圧差が 12.1 LU あり、上限 2.5 LU を超えています（最小 -28 LUFS＝E02、最大 -15.9 LUFS＝E04）。聞き手が音量つまみを何度も動かすことになります。\u003c/p>"}</script>
+<script>
+(function () {
+  var PRE = JSON.parse(document.getElementById('preset-data').textContent);
+  var panel = document.getElementById('demo-panel');
+  var bar = document.getElementById('preset-bar');
+  var buttons = bar.querySelectorAll('button[data-preset]');
+  bar.hidden = false;
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      buttons.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      panel.innerHTML = PRE[b.getAttribute('data-preset')];
+    });
+  });
+})();
+</script>
+</body>
+</html>
